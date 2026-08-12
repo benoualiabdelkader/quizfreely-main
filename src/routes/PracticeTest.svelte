@@ -157,9 +157,17 @@
     let questionComponents = $state([]);
     function setupStart() {
         showInputErr = false
+        
+        // Filter out terms that don't have content on BOTH sides (text or image)
+        // so we don't get weird blank questions in the test
+        terms = terms?.filter(t => 
+            (t.term?.trim()?.length > 0 || t.termImageUrl != null) &&
+            (t.def?.trim()?.length > 0 || t.defImageUrl != null)
+        ) ?? [];
+
         if (terms == null || terms.length < 1) {
             console.log("Terms array: ", terms);
-            inputErrMsg = "Sorry, there's not enough terms to take a practice test with";
+            inputErrMsg = "Sorry, there's not enough valid terms to take a practice test with. Make sure your flashcards aren't completely blank!";
             showInputErr = true;
             return;
         }
@@ -320,9 +328,9 @@ FRQs: ${numFRQsToAssign}`,
                 to avoid duplicate or confusing answer choices */
                 return (
                     t1.id == t2.id ||
-                    (t1.term.trim() == t2.term.trim() &&
+                    (t1.term?.trim() == t2.term?.trim() &&
                     t1.termImageUrl == t2.termImageUrl) ||
-                    (t1.def.trim() == t2.def.trim() &&
+                    (t1.def?.trim() == t2.def?.trim() &&
                     t1.defImageUrl == t2.defImageUrl)
                 );
             } else {
@@ -330,7 +338,7 @@ FRQs: ${numFRQsToAssign}`,
                 to avoid duplicate answer choices */
                 return (
                     t1.id == t2.id ||
-                    (t1[defKey].trim() == t2[defKey].trim() &&
+                    (t1[defKey]?.trim() == t2[defKey]?.trim() &&
                     t1[defKey+"ImageUrl"] == t2[defKey+"ImageUrl"])
                 );
             }
