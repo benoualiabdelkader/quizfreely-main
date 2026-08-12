@@ -593,11 +593,14 @@ FRQs: ${numFRQsToAssign}`,
     let activeQuestionIndex = $state(0);
     function handleQuestionAnswered(isCorrect) {
         if (takingActualPracticeTest) {
+            const currentQIndex = activeQuestionIndex;
             setTimeout(() => {
-                if (activeQuestionIndex < questions.length - 1) {
-                    activeQuestionIndex++;
-                } else {
-                    submitPracticeTest();
+                if (activeQuestionIndex === currentQIndex) {
+                    if (activeQuestionIndex < questions.length - 1) {
+                        activeQuestionIndex++;
+                    } else {
+                        submitPracticeTest();
+                    }
                 }
             }, 1500);
         }
@@ -1069,7 +1072,9 @@ questions { id }
                             ></FRQ>
                             {#if !data.alreadyOver}
                                 <div class="flex" style="margin-top: 1rem; justify-content: flex-end;">
-                                    <button class="button" onclick={() => handleQuestionAnswered(false)}>Next Question</button>
+                                    <button class="button" onclick={() => handleQuestionAnswered(false)}>
+                                        {index === questions.length - 1 ? 'Submit Test' : 'Next Question'}
+                                    </button>
                                 </div>
                             {/if}
                         </div>
@@ -1080,7 +1085,7 @@ questions { id }
                 <div class="flex" transition:slide={{ duration: 400 }}>
                     <p class="yay"><CheckmarkIcon></CheckmarkIcon> Submitted</p>
                 </div>
-            {:else}
+            {:else if activeQuestionIndex === questions.length - 1}
                 <div class="flex" transition:slide={{ duration: 400 }}>
                     <button
                         class="yay"
