@@ -202,8 +202,8 @@
                 style="display: flex; align-items: center; gap: 0.8rem; padding: 1.2rem; border-radius: var(--radius-lg); text-decoration: none; color: var(--fg-0); font-weight: 600; transition: all var(--transition-fast);"
                 href="/folder/{folder.id}"
                 transition:scale={{ duration: 200 }}
-                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';"
-                onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px 0 rgba(0, 0, 0, 0.3)';"
+                onmouseover={(e) => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'; }}
+                onmouseout={(e) => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='0 8px 32px 0 rgba(0, 0, 0, 0.3)'; }}
             >
                 <div style="background: rgba(108, 99, 255, 0.2); padding: 0.5rem; border-radius: 50%; color: var(--main); display: flex;">
                     <FolderIcon></FolderIcon>
