@@ -9,9 +9,11 @@
     import MoreIcon from "$lib/icons/MoreDotsVertical.svelte";
 </script>
 <div>
-    <a href={linkTemplateFunc(studyset.id)} class="button button-box" style="display: flex; gap: 0.4rem; flex-direction: column; text-align: start; align-items: start; align-content: start; justify-content: space-between; height: 100%;">
-        <p style="margin-bottom: 0px;">{ studyset.title }</p>
-        <p class="h6 fg0" style="margin-top: 0px; margin-bottom: 0px;">{studyset.termsCount ?? 0} {studyset.termsCount == 1 ? "Term" : "Terms"}</p>
+    <a href={linkTemplateFunc(studyset.id)} class="glass-panel" style="display: flex; flex-direction: column; text-align: start; justify-content: space-between; height: 100%; padding: 1.5rem; border-radius: var(--radius-lg); text-decoration: none; transition: transform var(--transition-bounce), box-shadow var(--transition-fast);">
+        <p class="h3" style="margin: 0 0 0.5rem 0; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--fg-0); line-height: 1.2;">{ studyset.title }</p>
+        <div style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 1rem; width: fit-content;">
+            <p class="h6" style="margin: 0; color: var(--fg-1); font-weight: 500;">{studyset.termsCount ?? 0} {studyset.termsCount == 1 ? "Term" : "Terms"}</p>
+        </div>
     </a>
     {#if showDropdown}
     <div class="flex" style="justify-content: end; position: relative; margin-top: 0px; margin-bottom: 0px;">

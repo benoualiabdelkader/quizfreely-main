@@ -131,11 +131,16 @@ input:focus, textarea:focus {
 	box-shadow: 0 0 0 4px var(--main-glow);
 }
 
-/* Cards */
+/* Cards and Grids */
 .card, .page > .content {
 	border-radius: var(--radius-xl);
 	background: var(--bg-1);
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+.grid.list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1.5rem;
 }
 
 /* Flashcards Grid styling */

@@ -10,27 +10,37 @@
     .top-menu-link {
         margin-top: 0px;
         color: var(--fg-1);
-        padding: 0.4rem 0.8rem;
-        border-radius: 0.8rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        transition: all var(--transition-fast);
+        text-decoration: none;
     }
     .top-menu-link:hover {
-        background-color: var(--bg-3ish);
-        box-shadow: 0px 1px 2px 1px var(--button-box-shadow-color);
+        background-color: var(--bg-2);
+        color: var(--fg-0);
+        transform: translateY(-1px);
     }
     .top-menu-link.current {
-        color: var(--main);
-        background-color: var(--bg-3ish);
-        box-shadow: 0px 1px 2px 1px var(--button-box-shadow-color);
+        color: var(--fg-0);
+        background-color: var(--main);
+        box-shadow: 0px 4px 12px var(--main-glow);
     }
     .top-menu-link.current:hover {
-        color: var(--main-alt);
+        transform: none;
+        background-color: var(--main-hover);
     }
     .top-menu-nav {
         display: flex;
         flex-direction: row;
-        gap: 1rem;
+        gap: 0.5rem;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 0.5rem;
+        background: var(--bg-1);
+        border-radius: 2.5rem;
+        width: fit-content;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
     }
 </style>
 

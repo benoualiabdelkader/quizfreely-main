@@ -198,17 +198,17 @@
         </p>
     {/if}
     {#snippet topMenu()}
-        <div class="flex">
-            <button onclick={() => newStudysetButton()}>
+        <div class="flex" style="gap: 1rem; margin-bottom: 2rem;">
+            <button class="glass-panel" style="background: var(--main); border-color: transparent; box-shadow: 0 4px 16px var(--main-glow);" onclick={() => newStudysetButton()}>
                 <IconPlus />
                 New Studyset
             </button>
-            <a href="/import" class="button alt">
+            <a href="/import" class="button alt glass-panel">
                 <EnterIcon></EnterIcon>
                 Import
             </a>
             {#if data.authed}
-                <button class="alt" onclick={() => openNewFolderModal()}>
+                <button class="alt glass-panel" onclick={() => openNewFolderModal()}>
                     <FolderIcon></FolderIcon>
                     New Folder
                 </button>
@@ -216,8 +216,12 @@
         </div>
     {/snippet}
     {#snippet emptyMsg()}
-        <div class="box flex center-h center-v">
-            <p class="fg0">Select "New Studyset" to enter or import terms</p>
+        <div class="glass-panel flex center-h center-v" style="padding: 3rem 2rem; flex-direction: column; gap: 1rem; text-align: center; border-radius: var(--radius-xl); margin-top: 2rem;">
+            <div style="background: var(--bg-2); padding: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <FolderIcon width="2rem" height="2rem"></FolderIcon>
+            </div>
+            <p class="h3" style="margin: 0;">It's a bit empty here...</p>
+            <p class="fg1">Select "New Studyset" to enter or import terms and begin your learning journey!</p>
         </div>
     {/snippet}
     {#snippet cloudDropdownContent(studyset)}

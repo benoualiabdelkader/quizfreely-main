@@ -194,16 +194,20 @@
 {#if data.myFolders?.length > 0}
     <div
         class="grid list"
-        style="overflow-wrap: anywhere; margin-bottom: 1rem;"
+        style="overflow-wrap: anywhere; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;"
     >
         {#each data.myFolders as folder}
             <a
-                class="button button-box"
-                style="display: flex;"
+                class="glass-panel"
+                style="display: flex; align-items: center; gap: 0.8rem; padding: 1.2rem; border-radius: var(--radius-lg); text-decoration: none; color: var(--fg-0); font-weight: 600; transition: all var(--transition-fast);"
                 href="/folder/{folder.id}"
                 transition:scale={{ duration: 200 }}
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';"
+                onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px 0 rgba(0, 0, 0, 0.3)';"
             >
-                <FolderIcon></FolderIcon>
+                <div style="background: rgba(108, 99, 255, 0.2); padding: 0.5rem; border-radius: 50%; color: var(--main); display: flex;">
+                    <FolderIcon></FolderIcon>
+                </div>
                 {folder.name}
             </a>
         {/each}
