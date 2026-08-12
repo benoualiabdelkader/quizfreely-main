@@ -7,7 +7,7 @@ services:
     plan: free
 
     buildCommand: npm install && npm run build
-    startCommand: node --env-file=.env build
+    startCommand: node server.js
 
     envVars:
       # Port Render assigns
