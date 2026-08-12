@@ -117,6 +117,10 @@
                         .toArray()?.[0];
                 }
             }
+
+            if (!data.alreadyOver && terms && terms.length > 0) {
+                setupStart();
+            }
         })();
         return () => {
             objectKeys.forEach(objectKey => {
@@ -126,10 +130,10 @@
         }
     });
 
-    let answerWith = $state("DEF"); // "TERM", "DEF", or "BOTH"
+    let answerWith = $state("BOTH"); // "TERM", "DEF", or "BOTH"
     let questionTypesEnabled = $state({
         mcq: true,
-        tfq: false,
+        tfq: true,
         frq: false,
     });
 
@@ -586,6 +590,145 @@ FRQs: ${numFRQsToAssign}`,
     let submitted = $state(data?.alreadyOver);
     let submitting = false;
 
+    let activeQuestionIndex = $state(0);
+    function handleQuestionAnswered(isCorrect) {
+        if (takingActualPracticeTest) {
+            setTimeout(() => {
+                if (activeQuestionIndex < questions.length - 1) {
+                    activeQuestionIndex++;
+                } else {
+                    submitPracticeTest();
+                }
+            }, 1500);
+        }
+    }
+
+    async function submitPracticeTest() {
+        if (submitting) {
+            return;
+        }
+        submitting = true;
+        setTimeout(() => {
+            submitting = false;
+        }, 2000);
+
+        questionsViewOnly = true;
+        questionsShowAccuracy = true;
+        takingActualPracticeTest = false;
+        showScore = true;
+        let questionDataArray = [];
+        questionsCorrect = 0;
+        let termProgressToUpdate = new Map();
+        questionComponents.forEach((questionComponent) => {
+            const questionData = questionComponent.getQuestion();
+            questionDataArray.push(questionData);
+
+            const thisTermId = questionData.mcq?.term?.id ??
+                questionData.tfq?.term?.id ??
+                questionData.frq?.term?.id;
+            const thisAnswerWith = questionData.mcq?.answerWith ??
+                questionData.tfq?.answerWith ??
+                questionData.frq?.answerWith;
+            let termCorrectIncrease = 0;
+            let termIncorrectIncrease = 0;
+            let defCorrectIncrease = 0;
+            let defIncorrectIncrease = 0;
+            if (
+                questionData?.mcq?.correct ||
+                questionData?.tfq?.correct ||
+                questionData?.frq?.correct
+            ) {
+                questionsCorrect++;
+                if (thisAnswerWith == "DEF") {
+                    defCorrectIncrease = 1;
+                } else {
+                    termCorrectIncrease = 1;
+                }
+            } else {
+                if (thisAnswerWith == "DEF") {
+                    defIncorrectIncrease = 1;
+                } else {
+                    termIncorrectIncrease = 1;
+                }
+            }
+
+            if (thisTermId != null) {
+                let existingToUpdate = termProgressToUpdate.get(thisTermId);
+                if (existingToUpdate == null) {
+                    termProgressToUpdate.set(thisTermId, {
+                        termId: thisTermId,
+                        ...(thisAnswerWith == "DEF"
+                            ? { defReviewedAt: new Date().toISOString() }
+                            : { termReviewedAt: new Date().toISOString() }),
+                        termCorrectIncrease,
+                        termIncorrectIncrease,
+                        defCorrectIncrease,
+                        defIncorrectIncrease,
+                        ...(termIncorrectIncrease > 0 ? { termLeitnerSystemBox: 1 } : {}),
+                        ...(defIncorrectIncrease > 0 ? { defLeitnerSystemBox: 1 } : {}),
+                    });
+                } else {
+                    termProgressToUpdate.set(thisTermId, {
+                        ...existingToUpdate,
+                        ...(thisAnswerWith == "DEF"
+                            ? { defReviewedAt: new Date().toISOString() }
+                            : { termReviewedAt: new Date().toISOString() }),
+                        termCorrectIncrease: (existingToUpdate.termCorrectIncrease ?? 0) + termCorrectIncrease,
+                        termIncorrectIncrease: (existingToUpdate.termIncorrectIncrease ?? 0) + termIncorrectIncrease,
+                        defCorrectIncrease: (existingToUpdate.defCorrectIncrease ?? 0) + defCorrectIncrease,
+                        defIncorrectIncrease: (existingToUpdate.defIncorrectIncrease ?? 0) + defIncorrectIncrease,
+                        ...(termIncorrectIncrease > 0 ? { termLeitnerSystemBox: 1 } : {}),
+                        ...(defIncorrectIncrease > 0 ? { defLeitnerSystemBox: 1 } : {}),
+                    });
+                }
+            }
+        });
+        if (data.authed && !data.local) {
+            try {
+                let raw = await fetch("/api/graphql", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        query: `mutation recordPracticeTest(
+$questions: [QuestionInput!]!
+) {
+recordPracticeTest(input: {
+questions: $questions
+}) {
+id
+questions { id }
+}
+}`,
+                        variables: { questions: questionDataArray },
+                    }),
+                });
+                let resp = await raw.json();
+                if (resp?.data?.recordPracticeTest?.id) {
+                    resp.data.recordPracticeTest.questions?.forEach?.((q, index) => {
+                        questionComponents?.[index]?.setQuestionId?.(q?.id)
+                    })
+                    submitted = true;
+                } else {
+                    alert("idk theres some kind of problem while saving sorry i guess");
+                }
+            } catch (err) {
+                alert("idk it kinda couldn't save, check ur internet connection mabye?");
+            }
+        } else {
+            const pt = await idbApiLayer.recordPracticeTest(
+                JSON.parse(JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    questions: questionDataArray,
+                })),
+                async (_) => { return data.studysetId == null ? [] : [data.studysetId] },
+            );
+            submitted = true;
+            pt?.questions?.forEach?.((q, index) => {
+                questionComponents?.[index]?.setQuestionId?.(q?.id);
+            });
+        }
+    }
+
     let showInputErr = $state(false);
     let inputErrMsg = $state("");
 
@@ -869,58 +1012,69 @@ FRQs: ${numFRQsToAssign}`,
         {/if}
         {#if showTest}
             {#each questions as question, index}
-                {#if question.type == "MCQ"}
-                    <div class="box">
-                        <MCQ
-                            term={question.term}
-                            answerWith={question.answerWith}
-                            distractors={question.distractors}
-                            viewOnly={questionsViewOnly}
-                            showAccuracy={questionsShowAccuracy}
-                            {answerUpdateCallback}
-                            bind:this={questionComponents[index]}
-                            answeredIndex={question.answeredIndex}
-                            correctChoiceIndex={question.correctChoiceIndex}
-                        ></MCQ>
-                    </div>
-                {:else if question.type == "TFQ"}
-                    <div class="box">
-                        <TFQ
-                            term={question.term}
-                            answerWith={question.answerWith}
-                            distractor={question.distractor}
-                            viewOnly={questionsViewOnly}
-                            showAccuracy={questionsShowAccuracy}
-                            {answerUpdateCallback}
-                            bind:this={questionComponents[index]}
-                            answeredBool={question.answeredBool}
-                            wasCorrect={question.wasCorrect}
-                        ></TFQ>
-                    </div>
-                {:else if question.type == "FRQ"}
-                    <div class="box">
-                        <FRQ
-                            term={question.term}
-                            answerWith={question.answerWith}
-                            viewOnly={questionsViewOnly}
-                            showAccuracy={questionsShowAccuracy}
-                            {index}
-                            {answerUpdateCallback}
-                            bind:this={questionComponents[index]}
-                            answeredString={question.answeredString}
-                            questionId={question.id}
-                            userMarkedCorrectChangeCallback={() => {
-                                questionsCorrect = 0;
-                                questionComponents.forEach((q) => {
-                                    const qData = q?.getQuestion?.()
-                                    if (qData?.mcq?.correct || qData?.tfq?.correct || qData?.frq?.correct) {
-                                        questionsCorrect++;
-                                    }
-                                });
-                            }}
-                        ></FRQ>
-                    </div>
-                {/if}
+                <div style="display: {activeQuestionIndex == index || data.alreadyOver ? 'block' : 'none'}; width: 100%; max-width: 800px; margin: 0 auto; transition: opacity 0.3s;">
+                    {#if question.type == "MCQ"}
+                        <div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-xl);">
+                            <MCQ
+                                term={question.term}
+                                answerWith={question.answerWith}
+                                distractors={question.distractors}
+                                viewOnly={questionsViewOnly}
+                                showAccuracy={questionsShowAccuracy}
+                                {answerUpdateCallback}
+                                bind:this={questionComponents[index]}
+                                answeredIndex={question.answeredIndex}
+                                correctChoiceIndex={question.correctChoiceIndex}
+                                immediateFeedback={!data.alreadyOver}
+                                onAnswered={handleQuestionAnswered}
+                            ></MCQ>
+                        </div>
+                    {:else if question.type == "TFQ"}
+                        <div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-xl);">
+                            <TFQ
+                                term={question.term}
+                                answerWith={question.answerWith}
+                                distractor={question.distractor}
+                                viewOnly={questionsViewOnly}
+                                showAccuracy={questionsShowAccuracy}
+                                {answerUpdateCallback}
+                                bind:this={questionComponents[index]}
+                                answeredBool={question.answeredBool}
+                                wasCorrect={question.wasCorrect}
+                                immediateFeedback={!data.alreadyOver}
+                                onAnswered={handleQuestionAnswered}
+                            ></TFQ>
+                        </div>
+                    {:else if question.type == "FRQ"}
+                        <div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-xl);">
+                            <FRQ
+                                term={question.term}
+                                answerWith={question.answerWith}
+                                viewOnly={questionsViewOnly}
+                                showAccuracy={questionsShowAccuracy}
+                                {index}
+                                {answerUpdateCallback}
+                                bind:this={questionComponents[index]}
+                                answeredString={question.answeredString}
+                                questionId={question.id}
+                                userMarkedCorrectChangeCallback={() => {
+                                    questionsCorrect = 0;
+                                    questionComponents.forEach((q) => {
+                                        const qData = q?.getQuestion?.()
+                                        if (qData?.mcq?.correct || qData?.tfq?.correct || qData?.frq?.correct) {
+                                            questionsCorrect++;
+                                        }
+                                    });
+                                }}
+                            ></FRQ>
+                            {#if !data.alreadyOver}
+                                <div class="flex" style="margin-top: 1rem; justify-content: flex-end;">
+                                    <button class="button" onclick={() => handleQuestionAnswered(false)}>Next Question</button>
+                                </div>
+                            {/if}
+                        </div>
+                    {/if}
+                </div>
             {/each}
             {#if submitted}
                 <div class="flex" transition:slide={{ duration: 400 }}>
@@ -930,188 +1084,7 @@ FRQs: ${numFRQsToAssign}`,
                 <div class="flex" transition:slide={{ duration: 400 }}>
                     <button
                         class="yay"
-                        onclick={async () => {
-                            if (submitting) {
-                                return;
-                            }
-                            submitting = true;
-                            setTimeout(() => {
-                                submitting = false;
-                            }, 2000);
-
-                            questionsViewOnly = true;
-                            questionsShowAccuracy = true;
-                            takingActualPracticeTest = false;
-                            showScore = true;
-                            let questionDataArray = [];
-                            questionsCorrect = 0;
-                            let termProgressToUpdate = new Map();
-                            questionComponents.forEach((questionComponent) => {
-                                const questionData =
-                                    questionComponent.getQuestion();
-                                questionDataArray.push(questionData);
-
-                                const thisTermId = questionData.mcq?.term?.id ??
-                                    questionData.tfq?.term?.id ??
-                                    questionData.frq?.term?.id;
-                                if (thisTermId == null) {
-                                    console.error(
-                                        "term id from question is null(ish)! this might happen if new question types aren't fully implemented",
-                                    );
-                                }
-                                const thisAnswerWith = questionData.mcq?.answerWith ??
-                                    questionData.tfq?.answerWith ??
-                                    questionData.frq?.answerWith;
-                                let termCorrectIncrease = 0;
-                                let termIncorrectIncrease = 0;
-                                let defCorrectIncrease = 0;
-                                let defIncorrectIncrease = 0;
-                                if (
-                                    questionData?.mcq?.correct ||
-                                    questionData?.tfq?.correct ||
-                                    questionData?.frq?.correct
-                                ) {
-                                    questionsCorrect++;
-
-                                    if (thisAnswerWith == "DEF") {
-                                        defCorrectIncrease = 1;
-                                    } else {
-                                        termCorrectIncrease = 1;
-                                    }
-                                } else {
-                                    if (thisAnswerWith == "DEF") {
-                                        defIncorrectIncrease = 1;
-                                    } else {
-                                        termIncorrectIncrease = 1;
-                                    }
-                                }
-
-                                if (thisTermId != null) {
-                                    let existingToUpdate =
-                                        termProgressToUpdate.get(thisTermId);
-                                    if (existingToUpdate == null) {
-                                        termProgressToUpdate.set(thisTermId, {
-                                            termId: thisTermId,
-                                            ...(thisAnswerWith == "DEF"
-                                                ? {
-                                                      defReviewedAt:
-                                                          new Date().toISOString(),
-                                                  }
-                                                : {
-                                                      termReviewedAt:
-                                                          new Date().toISOString(),
-                                                  }),
-                                            termCorrectIncrease,
-                                            termIncorrectIncrease,
-                                            defCorrectIncrease,
-                                            defIncorrectIncrease,
-                                            ...(termIncorrectIncrease > 0
-                                                ? { termLeitnerSystemBox: 1 }
-                                                : {}),
-                                            ...(defIncorrectIncrease > 0
-                                                ? { defLeitnerSystemBox: 1 }
-                                                : {}),
-                                        });
-                                    } else {
-                                        termProgressToUpdate.set(thisTermId, {
-                                            ...existingToUpdate,
-                                            ...(thisAnswerWith == "DEF"
-                                                ? {
-                                                      defReviewedAt:
-                                                          new Date().toISOString(),
-                                                  }
-                                                : {
-                                                      termReviewedAt:
-                                                          new Date().toISOString(),
-                                                  }),
-                                            termCorrectIncrease:
-                                                existingToUpdate.termCorrectIncrease ??
-                                                0 + termCorrectIncrease,
-                                            termIncorrectIncrease:
-                                                existingToUpdate.termIncorrectIncrease ??
-                                                0 + termIncorrectIncrease,
-                                            defCorrectIncrease:
-                                                existingToUpdate.defCorrectIncrease ??
-                                                0 + defCorrectIncrease,
-                                            defIncorrectIncrease:
-                                                existingToUpdate.defIncorrectIncrease ??
-                                                0 + defIncorrectIncrease,
-                                            ...(termIncorrectIncrease > 0
-                                                ? { termLeitnerSystemBox: 1 }
-                                                : {}),
-                                            ...(defIncorrectIncrease > 0
-                                                ? { defLeitnerSystemBox: 1 }
-                                                : {}),
-                                        });
-                                    }
-                                }
-                            });
-                            // console.log(questionDataArray);
-                            if (data.authed && !data.local) {
-                                try {
-                                    let raw = await fetch("/api/graphql", {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json",
-                                        },
-                                        body: JSON.stringify({
-                                            query: `mutation recordPracticeTest(
-    $questions: [QuestionInput!]!
-) {
-    recordPracticeTest(input: {
-        questions: $questions
-    }) {
-        id
-        questions {
-            id
-        }
-    }
-}`,
-                                            variables: {
-                                                questions: questionDataArray,
-                                            },
-                                        }),
-                                    });
-                                    let resp = await raw.json();
-                                    if (resp?.data?.recordPracticeTest?.id) {
-                                        resp.data.recordPracticeTest.questions?.forEach?.((q, index) => {
-                                            questionComponents?.[index]?.setQuestionId?.(q?.id)
-                                        })
-                                        submitted = true;
-                                    } else {
-                                        console.log(
-                                            "(submit button) no id in response: ",
-                                            resp,
-                                        );
-                                        alert(
-                                            "idk theres some kind of problem while saving sorry i guess",
-                                        );
-                                    }
-                                } catch (err) {
-                                    console.error(
-                                        "(submit button) Error recording cloud practice test: ",
-                                        err,
-                                    );
-                                    alert(
-                                        "idk it kinda couldn't save, check ur internet connection mabye?",
-                                    );
-                                }
-                            } else {
-                                const pt = await idbApiLayer.recordPracticeTest(
-                                    JSON.parse(
-                                        JSON.stringify({
-                                            timestamp: new Date().toISOString(),
-                                            questions: questionDataArray,
-                                        }),
-                                    ),
-                                    async (_) => { return data.studysetId == null ? [] : [data.studysetId] },
-                                );
-                                submitted = true;
-                                pt?.questions?.forEach?.((q, index) => {
-                                    questionComponents?.[index]?.setQuestionId?.(q?.id);
-                                });
-                            }
-                        }}
+                        onclick={submitPracticeTest}
                     >
                         <CheckmarkIcon></CheckmarkIcon>
                         Submit

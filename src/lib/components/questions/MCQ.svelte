@@ -1,7 +1,15 @@
 <script>
     import CheckmarkIcon from "$lib/icons/Checkmark.svelte";
     import XMarkIcon from "$lib/icons/CloseXMark.svelte";
-    let { term, answerWith, distractors, viewOnly, showAccuracy, answerUpdateCallback, answeredIndex: initAnsweredIndex, correctChoiceIndex: initCorrectChoiceIndex, showCorrectAnswer } = $props();
+    let { term, answerWith, distractors, viewOnly, showAccuracy, answerUpdateCallback, answeredIndex: initAnsweredIndex, correctChoiceIndex: initCorrectChoiceIndex, showCorrectAnswer, immediateFeedback = false, onAnswered } = $props();
+    let localShowAccuracy = $state(false);
+    let localShowCorrectAnswer = $state(false);
+    
+    $effect(() => {
+        localShowAccuracy = showAccuracy;
+        localShowCorrectAnswer = showCorrectAnswer;
+    });
+
     /* initAnsweredIndex and initCorrectChoiceIndex are only defined when reviewing questions from a completed practice test */
     function shuffleInPlace(arr) {
         for (let index = arr.length - 1; index > 0; index--) {
@@ -94,16 +102,21 @@
     {/if}
     <div style="display: grid; gap: 0.2rem; grid-template-columns: auto; justify-content: start; margin-top: 0.6rem;">
         {#each answers as answer, index}
-            <button style="display: flex; justify-items: start; justify-content: start; text-align: start; margin-top: 0px;" class="button-box with-bordercolor-border { answeredIndex == index ? "selected" : ""} {showAccuracy && showCorrectAnswer && correctChoiceIndex == index ? "selected yay" : ""} {
-                showAccuracy && index == answeredIndex ?
+            <button style="display: flex; justify-items: start; justify-content: start; text-align: start; margin-top: 0px;" class="button-box with-bordercolor-border { answeredIndex == index ? "selected" : ""} {localShowAccuracy && localShowCorrectAnswer && correctChoiceIndex == index ? "selected yay" : ""} {
+                localShowAccuracy && index == answeredIndex ?
                     (answeredIndex == correctChoiceIndex ?
                         "yay" : "ohno"
                     ) : ""
             }" onclick={() => {
                 answeredIndex = index;
-                answerUpdateCallback()
-            }} disabled={viewOnly}>
-                {#if showAccuracy && index != correctChoiceIndex}
+                answerUpdateCallback();
+                if (immediateFeedback) {
+                    localShowAccuracy = true;
+                    localShowCorrectAnswer = true;
+                    if (onAnswered) onAnswered(index == correctChoiceIndex);
+                }
+            }} disabled={viewOnly || (immediateFeedback && localShowAccuracy)}>
+                {#if localShowAccuracy && index != correctChoiceIndex}
                     <XMarkIcon class="button-box-selected-icon"></XMarkIcon>
                 {:else}
                     <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
@@ -120,14 +133,14 @@
             </button>
         {/each}
     </div>
-    {#if showAccuracy && answeredIndex != correctChoiceIndex}
+    {#if localShowAccuracy && answeredIndex != correctChoiceIndex}
         <div class="flex">
-            {#if showCorrectAnswer}
-                <button class="faint" onclick={() => showCorrectAnswer = false}>
+            {#if localShowCorrectAnswer}
+                <button class="faint" onclick={() => localShowCorrectAnswer = false}>
                     Hide Correct Answer
                 </button>
             {:else}
-                <button class="faint" onclick={() => showCorrectAnswer = true}>
+                <button class="faint" onclick={() => localShowCorrectAnswer = true}>
                     Show Correct Answer
                 </button>
             {/if}

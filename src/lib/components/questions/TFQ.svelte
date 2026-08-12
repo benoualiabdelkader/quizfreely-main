@@ -1,7 +1,12 @@
 <script>
     import CheckmarkIcon from "$lib/icons/Checkmark.svelte";
     import XMarkIcon from "$lib/icons/CloseXMark.svelte";
-    let { term, answerWith, distractor, viewOnly, showAccuracy, answerUpdateCallback, answeredBool, wasCorrect } = $props();
+    let { term, answerWith, distractor, viewOnly, showAccuracy, answerUpdateCallback, answeredBool, wasCorrect, immediateFeedback = false, onAnswered } = $props();
+    let localShowAccuracy = $state(false);
+    $effect(() => {
+        localShowAccuracy = showAccuracy;
+    });
+    
     /* answeredBool and wasCorrect are only defined when reviewing questions from a completed practice test */
     let correctAnswerBool = answeredBool != null ?
         (wasCorrect ?
@@ -93,34 +98,42 @@
         </div>
     </div>
     <div class="flex">
-        <button style="display: flex; justify-items: start; justify-content: start; text-align: start;" disabled={viewOnly} class="button-box with-bordercolor-border {
+        <button style="display: flex; justify-items: start; justify-content: start; text-align: start;" disabled={viewOnly || (immediateFeedback && localShowAccuracy)} class="button-box with-bordercolor-border {
             answeredBool === true ? "selected" : ""
-        } {showAccuracy && answeredBool === true ?
+        } {localShowAccuracy && answeredBool === true ?
             (answeredBool == correctAnswerBool ?
                 "yay" : "ohno"
             ) : ""
         }" onclick={() => {
             answeredBool = true;
             answerUpdateCallback();
+            if (immediateFeedback) {
+                localShowAccuracy = true;
+                if (onAnswered) onAnswered(answeredBool == correctAnswerBool);
+            }
         }}>
-            {#if showAccuracy && answeredBool != correctAnswerBool}
+            {#if localShowAccuracy && answeredBool != correctAnswerBool}
                 <XMarkIcon class="button-box-selected-icon"></XMarkIcon>
             {:else}
                 <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
             {/if}
             True
         </button>
-        <button style="display: flex; justify-items: start; justify-content: start; text-align: start;" disabled={viewOnly} class="button-box with-bordercolor-border {
+        <button style="display: flex; justify-items: start; justify-content: start; text-align: start;" disabled={viewOnly || (immediateFeedback && localShowAccuracy)} class="button-box with-bordercolor-border {
             answeredBool === false ? "selected" : ""
-        } {showAccuracy && answeredBool === false ?
+        } {localShowAccuracy && answeredBool === false ?
             (answeredBool == correctAnswerBool ?
                 "yay" : "ohno"
             ) : ""
         }" onclick={() => {
             answeredBool = false;
             answerUpdateCallback();
+            if (immediateFeedback) {
+                localShowAccuracy = true;
+                if (onAnswered) onAnswered(answeredBool == correctAnswerBool);
+            }
         }}>
-            {#if showAccuracy && answeredBool != correctAnswerBool}
+            {#if localShowAccuracy && answeredBool != correctAnswerBool}
                 <XMarkIcon class="button-box-selected-icon"></XMarkIcon>
             {:else}
                 <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
