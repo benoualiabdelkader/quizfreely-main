@@ -163,26 +163,31 @@ class QuizFreelyApp extends StatelessWidget {
   ThemeData _buildLightTheme() {
     const primary = Color(0xFF6C63FF);
     const secondary = Color(0xFF03DAC6);
+    const bg = Color(0xFFF7F7F9);
+    
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
         secondary: secondary,
         brightness: Brightness.light,
+        surface: bg,
       ),
+      scaffoldBackgroundColor: bg,
       textTheme: GoogleFonts.interTextTheme(),
       cardTheme: CardThemeData(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: const Color(0xFFF5F5FF),
+        elevation: 8,
+        shadowColor: Colors.black.withOpacity(0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        color: Colors.white,
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: bg,
         foregroundColor: const Color(0xFF1A1A2E),
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 24,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1A1A2E),
         ),
@@ -190,19 +195,22 @@ class QuizFreelyApp extends StatelessWidget {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primary,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 8,
       ),
     );
   }
 
   ThemeData _buildDarkTheme() {
-    const primary = Color(0xFF7C74FF);
+    const primary = Color(0xFF6C63FF);
+    const secondary = Color(0xFF03DAC6);
     const bg = Color(0xFF0F0F1A);
     const card = Color(0xFF1E1E35);
+    
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
+        secondary: secondary,
         brightness: Brightness.dark,
         surface: bg,
       ).copyWith(
@@ -213,8 +221,9 @@ class QuizFreelyApp extends StatelessWidget {
       scaffoldBackgroundColor: bg,
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       cardTheme: CardThemeData(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 12,
+        shadowColor: Colors.black.withOpacity(0.4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         color: card,
       ),
       appBarTheme: AppBarTheme(
@@ -222,8 +231,8 @@ class QuizFreelyApp extends StatelessWidget {
         elevation: 0,
         backgroundColor: bg,
         foregroundColor: Colors.white,
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 24,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
@@ -231,7 +240,7 @@ class QuizFreelyApp extends StatelessWidget {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primary,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 8,
       ),
       dividerColor: const Color(0xFF2A2A45),
     );
