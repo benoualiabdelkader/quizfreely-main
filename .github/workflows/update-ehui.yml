@@ -1,0 +1,35 @@
+name: Update EhUI
+on:
+  workflow_dispatch:
+jobs:
+  update_ehui:
+    name: Update EhUI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone quizfreely/quizfreely
+        run: git clone https://github.com/quizfreely/quizfreely.git
+      - name: Clone EhUI
+        run: git clone https://github.com/ehanahamed/ehui.git
+      - name: Copy compiled CSS
+        run: |
+          timestamp=$(date +"%F_%H.%M")
+          rm quizfreely/static/immutable/css/ehui-*.min.css
+          rm quizfreely/static/immutable/themes/{auto,light,dark}-*.min.css
+          mkdir -p quizfreely/static/immutable/css/
+          mkdir -p quizfreely/static/immutable/themes/
+          cp ehui/site/css/ehui.min.css "quizfreely/static/immutable/css/ehui-$timestamp.min.css"
+          cp ehui/site/themes/auto-light-dark.min.css "quizfreely/static/immutable/themes/auto-$timestamp.min.css"
+          cp ehui/site/themes/light.min.css "quizfreely/static/immutable/themes/light-$timestamp.min.css"
+          cp ehui/site/themes/dark.min.css "quizfreely/static/immutable/themes/dark-$timestamp.min.css"
+          sed -E -i \
+            -e "s/ehui-[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}.[0-9]{2}.min.css/ehui-$timestamp.min.css/g" \
+            -e "s/%theme%-[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}.[0-9]{2}.min.css/%theme%-$timestamp.min.css/g" \
+            quizfreely/src/app.html
+      - name: Commit & push
+        run: |
+          cd quizfreely
+          git add .
+          git config --global user.name "Ehan A"
+          git config --global user.email "ehan@quizfreely.org"
+          git commit -m "Update EhUI"
+          git push https://ehanahamed:${{ secrets.GH_TOKEN }}@github.com/quizfreely/quizfreely.git --all

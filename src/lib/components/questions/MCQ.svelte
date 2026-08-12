@@ -1,0 +1,136 @@
+<script>
+    import CheckmarkIcon from "$lib/icons/Checkmark.svelte";
+    import XMarkIcon from "$lib/icons/CloseXMark.svelte";
+    let { term, answerWith, distractors, viewOnly, showAccuracy, answerUpdateCallback, answeredIndex: initAnsweredIndex, correctChoiceIndex: initCorrectChoiceIndex, showCorrectAnswer } = $props();
+    /* initAnsweredIndex and initCorrectChoiceIndex are only defined when reviewing questions from a completed practice test */
+    function shuffleInPlace(arr) {
+        for (let index = arr.length - 1; index > 0; index--) {
+            const randomIndex = Math.floor(Math.random() * (index + 1));
+            [arr[index], arr[randomIndex]] = [arr[randomIndex], arr[index]];
+        }
+        return arr;
+    }
+    let correctChoiceIndex = initCorrectChoiceIndex ?? Math.floor(
+        Math.random() * (distractors.length + 1)
+    );
+    let answers = $state(
+        initCorrectChoiceIndex == null ?
+            [
+                ...shuffleInPlace(distractors).slice(
+                    0, correctChoiceIndex
+                ),
+                {
+                    id: term.id,
+                    term: term.term,
+                    def: term.def,
+                    termImageUrl: term.termImageUrl,
+                    defImageUrl: term.defImageUrl
+                },
+                ...distractors.slice(correctChoiceIndex)
+            ] : [
+                ...distractors.slice(
+                    0, correctChoiceIndex
+                ),
+                {
+                    id: term.id,
+                    term: term.term,
+                    def: term.def,
+                    termImageUrl: term.termImageUrl,
+                    defImageUrl: term.defImageUrl
+                },
+                ...distractors.slice(
+                    correctChoiceIndex
+                )
+            ]
+    );
+
+    let answeredIndex = $state(initAnsweredIndex ?? null);
+
+    export function getQuestion() {
+        if (answeredIndex == null || answeredIndex == -1) {
+            console.log("Unanswered MCQ")
+        }
+        return {
+            mcq: {
+                term: {
+                    id: term.id,
+                    term: term.term,
+                    def: term.def
+                },
+                answerWith: answerWith,
+                correct: answeredIndex == correctChoiceIndex,
+                answeredIndex: answeredIndex,
+                distractors: distractors.map(distractor => {
+                    return {
+                        id: distractor.id,
+                        term: distractor.term,
+                        def: distractor.def
+                    }
+                }),
+                correctChoiceIndex: correctChoiceIndex
+            }
+        }
+    }
+    export function isAnswered() {
+        return answeredIndex !== null && answeredIndex >= 0;
+    }
+</script>
+<style>
+    .term-image {
+        max-width: 300px;
+        max-height: 200px;
+        margin: 0px;
+        padding: 0px;
+        border-radius: 0.8rem;
+    }
+</style>
+<div>
+    <p class="fg0">Select the matching { answerWith == "DEF" ? "definition" : "term"}</p>
+    <p class="h4" style="white-space: pre-wrap; overflow-wrap: break-word; max-width: 85vw;">{ answerWith == "DEF" ?
+        term.term : term.def
+    }</p>
+    {#if (answerWith == "DEF" ? term.termImageUrl : term.defImageUrl) != null}
+        <div><img src={answerWith == "DEF" ? term.termImageUrl : term.defImageUrl} class="term-image" alt="{answerWith == "DEF" ? "term" : "definition"} image"></div>
+    {/if}
+    <div style="display: grid; gap: 0.2rem; grid-template-columns: auto; justify-content: start; margin-top: 0.6rem;">
+        {#each answers as answer, index}
+            <button style="display: flex; justify-items: start; justify-content: start; text-align: start; margin-top: 0px;" class="button-box with-bordercolor-border { answeredIndex == index ? "selected" : ""} {showAccuracy && showCorrectAnswer && correctChoiceIndex == index ? "selected yay" : ""} {
+                showAccuracy && index == answeredIndex ?
+                    (answeredIndex == correctChoiceIndex ?
+                        "yay" : "ohno"
+                    ) : ""
+            }" onclick={() => {
+                answeredIndex = index;
+                answerUpdateCallback()
+            }} disabled={viewOnly}>
+                {#if showAccuracy && index != correctChoiceIndex}
+                    <XMarkIcon class="button-box-selected-icon"></XMarkIcon>
+                {:else}
+                    <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
+                {/if}
+                <div style="margin-top: 0px; max-width: 85vw;">
+                <span style="white-space: pre-wrap; overflow-wrap: break-word; margin-top: 0px;">{
+                    answerWith == "DEF" ?
+                        answer.def : answer.term
+                }</span>
+                {#if (answerWith == "DEF" ? answer.defImageUrl : answer.termImageUrl) != null}
+                    <div><img src={answerWith == "DEF" ? answer.defImageUrl : answer.termImageUrl} class="term-image" alt="answer choice image"></div>
+                {/if}
+                </div>
+            </button>
+        {/each}
+    </div>
+    {#if showAccuracy && answeredIndex != correctChoiceIndex}
+        <div class="flex">
+            {#if showCorrectAnswer}
+                <button class="faint" onclick={() => showCorrectAnswer = false}>
+                    Hide Correct Answer
+                </button>
+            {:else}
+                <button class="faint" onclick={() => showCorrectAnswer = true}>
+                    Show Correct Answer
+                </button>
+            {/if}
+        </div>
+    {/if}
+</div>

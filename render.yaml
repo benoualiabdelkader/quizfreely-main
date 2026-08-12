@@ -1,0 +1,42 @@
+services:
+  # ── QuizFreely Web Frontend ─────────────────────────────────────────
+  - type: web
+    name: quizfreely-web
+    runtime: node
+    region: frankfurt  # choose closest to you: oregon, frankfurt, singapore, ohio
+    plan: free
+
+    buildCommand: npm install && npm run build
+    startCommand: node --env-file=.env build
+
+    envVars:
+      # Port Render assigns
+      - key: PORT
+        value: 10000
+
+      # The QuizFreely Go API — use the public one OR deploy your own
+      # If you deploy your own API on Render, replace this with your API service URL
+      - key: API_URL
+        value: https://quizfreely.org/api
+
+      # Realtime server (leave as-is if using quizfreely.org backend)
+      - key: REALTIME_SERVER_URL
+        value: https://quizfreely.org/realtime
+
+      - key: REALTIME_SERVER_WS_URL
+        value: wss://quizfreely.org/realtime
+
+      # Disable features not needed for self-hosted
+      - key: ENABLE_OAUTH_GOOGLE
+        value: false
+
+      - key: ENABLE_CLASSES
+        value: false
+
+      - key: ENABLE_TERM_IMAGES
+        value: true
+
+      - key: ENABLE_UMAMI
+        value: false
+
+    healthCheckPath: /

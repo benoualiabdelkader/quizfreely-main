@@ -1,0 +1,75 @@
+quizfreely.org {
+        encode zstd gzip
+
+        log {
+                output file /var/log/caddy/quizfreely.org.log {
+                        roll_size 10MiB
+                        roll_keep 5
+                        roll_keep_for 720h
+                }
+                format json
+        }
+
+        handle_path /api/* {
+            reverse_proxy localhost:8008
+        }
+        handle_path /realtime/* {
+            reverse_proxy localhost:8000
+        }
+
+        redir /docs https://docs.quizfreely.org permanent
+        handle_path /docs/* {
+            redir https://docs.quizfreely.org{uri} permanent
+        }
+
+        handle /umami {
+            reverse_proxy localhost:8083
+        }
+        handle /umami/* {
+            reverse_proxy localhost:8083
+        }
+        
+        @immutable {
+                path /immutable/*
+                path /_app/immutable/*
+        }
+        handle @immutable {
+                root * /home/quizfreely/web/current/build/client
+                file_server
+                header {
+                        Cache-Control "public, max-age=31536000, immutable"
+                }
+        }
+        handle /_app/* {
+                root * /home/quizfreely/web/current/build/client
+                file_server
+        }
+
+        handle {
+            reverse_proxy localhost:8080
+        }
+
+        redir /donate https://hcb.hackclub.com/donations/start/quizfreely
+        redir /discord https://discord.gg/6qQrybf6kG
+}
+www.quizfreely.org, quizfreely.com, www.quizfreely.com, quizfreely.ehan.dev, quizlate.ehan.dev {
+        redir https://quizfreely.org{uri} permanent
+}
+docs.quizfreely.org {
+        root * /srv/quizfreely-docs/www
+        encode zstd gzip
+
+        try_files {path} {path}/ /404.html
+        file_server
+}
+docs.quizfreely.com {
+        redir https://docs.quizfreely.org{uri} permanent
+}
+*.static.quizfreely.org {
+	reverse_proxy localhost:3902 {
+                health_uri       /health
+                health_port      3903
+                #health_interval 15s
+                #health_timeout  5s
+        }
+}

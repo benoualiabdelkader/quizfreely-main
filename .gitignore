@@ -1,0 +1,24 @@
+node_modules
+
+.output
+.svelte-kit
+build
+
+.DS_Store
+Thumbs.db
+
+.env
+.env.local
+.env.compose
+
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+.crush

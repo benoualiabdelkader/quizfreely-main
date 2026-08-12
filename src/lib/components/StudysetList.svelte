@@ -1,0 +1,471 @@
+<script>
+    import { idbApiLayer, db } from "$lib/idb-api-layer";
+    import { onMount } from "svelte";
+    import { slide, scale } from "svelte/transition";
+    import StudysetLinkBox from "$lib/components/StudysetLinkBox.svelte";
+    import MoreIcon from "$lib/icons/MoreDotsVertical.svelte";
+    import LocalIcon from "$lib/icons/Local.svelte";
+    import BookmarkIcon from "$lib/icons/Bookmark.svelte";
+    import FolderIcon from "$lib/icons/Folder.svelte";
+    import ArrowLeftIcon from "$lib/icons/ArrowLeft.svelte";
+    import ArrowRightIcon from "$lib/icons/ArrowRight.svelte";
+    import ClockIcon from "$lib/icons/Clock.svelte";
+    import AngleUpIcon from "$lib/icons/AngleUp.svelte";
+    import AngleDownIcon from "$lib/icons/AngleDown.svelte";
+
+    let {
+        data,
+        cloudLinkTemplateFunc,
+        localLinkTemplateFunc,
+        cloudEmptyMsg,
+        localEmptyMsg,
+        hideTypeWhenCloudEmptyAndLocalExists = false,
+        collapseCloud = true,
+        collapseLocal = true,
+        collapseSaved = true,
+        collapseRecent = true,
+        showCloudDropdown = false,
+        cloudDropdownContent,
+        showLocalDropdown = false,
+        localDropdownContent,
+        showSavedDropdown = false,
+        savedDropdownContent,
+        showRecentDropdown = false,
+        recentDropdownContent,
+        topMenu,
+    } = $props();
+
+    let localStudysetList = $state([]);
+
+    let cloudCurrentlyCollapsed = $state(true);
+    let localCurrentlyCollapsed = $state(true);
+    let savedCurrentlyCollapsed = $state(true);
+    let recentCurrentlyCollapsed = $state(true);
+
+    onMount(async function () {
+        const draftIds = await db.studysets
+            .orderBy("updatedAt")
+            .reverse()
+            .filter((studyset) => studyset.draft == false)
+            .primaryKeys();
+        localStudysetList = await idbApiLayer.getStudysetsByIds(draftIds, { termsCount: true });
+    });
+
+    const COLLAPSE_LENGTH = 6;
+    const COLLAPSE_LENGTH_S = 3;
+    const EXPANDED_PER_PAGE = 24;
+
+    let cloudPage = $state(0);
+    let localPage = $state(0);
+    let savedPage = $state(0);
+
+    function recentLinkFunc(id) {
+        if (typeof id === 'number') {
+            return localLinkTemplateFunc(id);
+        }
+        return cloudLinkTemplateFunc(id);
+    }
+
+    let showErrorBox = $state(false);
+    let errorBoxText = $state("");
+
+    async function loadPage(type, direction) {
+        let cursor = null;
+        let query = "";
+        let variables = {};
+
+        if (type === "cloud") {
+            cursor =
+                direction === "next"
+                    ? data.studysetListPageInfo?.endCursor
+                    : data.studysetListPageInfo?.startCursor;
+            query = `query ($first: Int, $after: String, $last: Int, $before: String) {
+                myStudysets(first: $first, after: $after, last: $last, before: $before, hideFoldered: true) {
+                    edges { node { id title private termsCount updatedAt myFolder { id name } } }
+                    pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+                }
+            }`;
+        } else if (type === "saved") {
+            cursor =
+                direction === "next"
+                    ? data.mySavedStudysetsPageInfo?.endCursor
+                    : data.mySavedStudysetsPageInfo?.startCursor;
+            query = `query ($first: Int, $after: String, $last: Int, $before: String) {
+                mySavedStudysets(first: $first, after: $after, last: $last, before: $before) {
+                    edges { node { id title private termsCount updatedAt myFolder { id name } } }
+                    pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+                }
+            }`;
+        }
+
+        if (direction === "next") {
+            variables.first = EXPANDED_PER_PAGE;
+            variables.after = cursor;
+        } else {
+            variables.last = EXPANDED_PER_PAGE;
+            variables.before = cursor;
+        }
+
+        try {
+            const respRaw = await fetch("/api/graphql", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query, variables }),
+            });
+            const resp = await respRaw.json();
+            const connection = resp?.data?.myStudysets ??
+                resp?.data?.mySavedStudysets ??
+                resp?.data?.myRecentActivityStudysets;
+
+            if (connection) {
+                if (type === "cloud") {
+                    data.studysetList = connection.edges.map((e) => e.node);
+                    data.studysetListPageInfo = connection.pageInfo;
+                    cloudPage += direction === "next" ? 1 : -1;
+                } else if (type === "saved") {
+                    data.mySavedStudysets = connection.edges.map((e) => e.node);
+                    data.mySavedStudysetsPageInfo = connection.pageInfo;
+                    savedPage += direction === "next" ? 1 : -1;
+                }
+            }
+        } catch (err) {
+            console.error("Error loading page:", err);
+        }
+    }
+
+    const getPaginatedList = (list, isCollapsed, page) => {
+        if (isCollapsed) {
+            return list.slice(0, COLLAPSE_LENGTH);
+        }
+        return list.slice(
+            page * EXPANDED_PER_PAGE,
+            (page + 1) * EXPANDED_PER_PAGE,
+        );
+    };
+
+    const hasNextPageFunc = (type) => {
+        if (type === "cloud") {
+            if (cloudCurrentlyCollapsed)
+                return data.studysetList?.length > COLLAPSE_LENGTH;
+            return data.studysetListPageInfo?.hasNextPage;
+        }
+        if (type === "saved") {
+            if (savedCurrentlyCollapsed)
+                return data.mySavedStudysets?.length > COLLAPSE_LENGTH;
+            return data.mySavedStudysetsPageInfo?.hasNextPage;
+        }
+        if (type === "recent") {
+            if (recentCurrentlyCollapsed)
+                return data.myRecentActivityStudysets?.length > COLLAPSE_LENGTH;
+            return false;
+        }
+        if (type === "local") {
+            if (localCurrentlyCollapsed)
+                return localStudysetList?.length > COLLAPSE_LENGTH;
+            return (
+                (localPage + 1) * EXPANDED_PER_PAGE < localStudysetList.length
+            );
+        }
+        return false;
+    };
+
+    const hasPrevPageFunc = (type) => {
+        if (type === "cloud") {
+            if (cloudCurrentlyCollapsed) return false;
+            return data.studysetListPageInfo?.hasPreviousPage;
+        }
+        if (type === "saved") {
+            if (savedCurrentlyCollapsed) return false;
+            return data.mySavedStudysetsPageInfo?.hasPreviousPage;
+        }
+        if (type === "recent") {
+            return false;
+        }
+        if (type === "local") {
+            if (localCurrentlyCollapsed) return false;
+            return localPage > 0;
+        }
+        return false;
+    };
+
+</script>
+
+{@render topMenu?.()}
+{#if data.myFolders?.length > 0}
+    <div
+        class="grid list"
+        style="overflow-wrap: anywhere; margin-bottom: 1rem;"
+    >
+        {#each data.myFolders as folder}
+            <a
+                class="button button-box"
+                style="display: flex;"
+                href="/folder/{folder.id}"
+                transition:scale={{ duration: 200 }}
+            >
+                <FolderIcon></FolderIcon>
+                {folder.name}
+            </a>
+        {/each}
+    </div>
+{/if}
+{#if data.authed && !(hideTypeWhenCloudEmptyAndLocalExists && !(data.studysetList?.length > 0) && localStudysetList?.length > 0)}
+                <div
+                    class="grid list"
+                    style="overflow-wrap: anywhere; {collapseCloud &&
+                    data.studysetList?.length > COLLAPSE_LENGTH
+                        ? 'margin-bottom: 0px;'
+                        : ''}"
+                >
+                    {#if data.studysetList && data.studysetList.length > 0}
+                        {#each cloudCurrentlyCollapsed ? data.studysetList.slice(0, COLLAPSE_LENGTH) : data.studysetList as studyset}
+                            <StudysetLinkBox
+                                {studyset}
+                                linkTemplateFunc={cloudLinkTemplateFunc}
+                                showDropdown={showCloudDropdown}
+                                dropdownContent={cloudDropdownContent}
+                            ></StudysetLinkBox>
+                        {/each}
+                    {:else}
+                        {@render cloudEmptyMsg()}
+                    {/if}
+                </div>
+                {#if (collapseCloud && data.studysetList?.length > COLLAPSE_LENGTH) || (!cloudCurrentlyCollapsed && (data.studysetListPageInfo?.hasNextPage || data.studysetListPageInfo?.hasPreviousPage))}
+                    {#if !cloudCurrentlyCollapsed && (hasNextPageFunc("cloud") || hasPrevPageFunc("cloud"))}
+                        <div
+                            class={hasNextPageFunc("cloud") &&
+                            hasPrevPageFunc("cloud")
+                                ? "combo-buttons"
+                                : ""}
+                        >
+                            {#if hasPrevPageFunc("cloud")}
+                                <button
+                                    class="button alt {hasNextPageFunc('cloud')
+                                        ? 'left'
+                                        : ''}"
+                                    onclick={() => loadPage("cloud", "prev")}
+                                >
+                                    <ArrowLeftIcon></ArrowLeftIcon> Previous
+                                </button>
+                            {/if}
+                            {#if hasNextPageFunc("cloud")}
+                                <button
+                                    class="button alt {hasPrevPageFunc('cloud')
+                                        ? 'right'
+                                        : ''}"
+                                    onclick={() => loadPage("cloud", "next")}
+                                >
+                                    Next <ArrowRightIcon></ArrowRightIcon>
+                                </button>
+                            {/if}
+                        </div>
+                    {/if}
+                    <div
+                        class="flex center"
+                        style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
+                    >
+                        <button
+                            class="faint"
+                            onclick={() => {
+                                cloudCurrentlyCollapsed =
+                                    !cloudCurrentlyCollapsed;
+                                cloudPage = 0;
+                            }}
+                        >
+                            {#if cloudCurrentlyCollapsed}
+                                <AngleDownIcon></AngleDownIcon> Show All
+                            {:else}
+                                <AngleUpIcon></AngleUpIcon> Collapse
+                            {/if}
+                        </button>
+                    </div>
+                {/if}
+            {/if}
+            {#if data.authed && localStudysetList?.length > 0 && !(hideTypeWhenCloudEmptyAndLocalExists && !(data.studysetList?.length > 0) && localStudysetList?.length > 0)}
+                <div class="flex" style="align-items: center; gap: 0.6rem; margin-top: 0.6rem;">
+                    <LocalIcon width="1.2rem" height="1.2rem"></LocalIcon> <p class="h4" style="margin-bottom: 0px;">Local Studysets</p>
+                </div>
+            {/if}
+            {#if localStudysetList.length > 0 || !data.authed}
+            <div
+                class="grid list"
+                style="overflow-wrap: anywhere; {collapseLocal &&
+                localStudysetList?.length > COLLAPSE_LENGTH
+                    ? 'margin-bottom: 0px;'
+                    : ''}"
+            >
+                {#each getPaginatedList(localStudysetList, localCurrentlyCollapsed, localPage) as studyset}
+                    <StudysetLinkBox
+                        {studyset}
+                        linkTemplateFunc={localLinkTemplateFunc}
+                        showDropdown={showLocalDropdown}
+                        dropdownContent={localDropdownContent}
+                    ></StudysetLinkBox>
+                {/each}
+                {#if !data.authed && localStudysetList.length == 0}
+                    <!-- only show empty message here if user is logged out and therefore can only have local studysets -->
+                    {@render localEmptyMsg()}
+                {/if}
+            </div>
+            {/if}
+            {#if (collapseLocal && localStudysetList?.length > COLLAPSE_LENGTH) || (!localCurrentlyCollapsed && localStudysetList?.length > EXPANDED_PER_PAGE)}
+                {#if !localCurrentlyCollapsed && (hasNextPageFunc("local") || hasPrevPageFunc("local"))}
+                    <div
+                        class={hasNextPageFunc("local") &&
+                        hasPrevPageFunc("local")
+                            ? "combo-buttons"
+                            : ""}
+                    >
+                        {#if hasPrevPageFunc("local")}
+                            <button
+                                class="button alt {hasNextPageFunc('local')
+                                    ? 'left'
+                                    : ''}"
+                                onclick={() => localPage--}
+                            >
+                                <ArrowLeftIcon></ArrowLeftIcon> Previous
+                            </button>
+                        {/if}
+                        {#if hasNextPageFunc("local")}
+                            <button
+                                class="button alt {hasPrevPageFunc('local')
+                                    ? 'right'
+                                    : ''}"
+                                onclick={() => localPage++}
+                            >
+                                Next <ArrowRightIcon></ArrowRightIcon>
+                            </button>
+                        {/if}
+                    </div>
+                {/if}
+                <div
+                    class="flex center"
+                    style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
+                >
+                    <button
+                        class="faint"
+                        onclick={() => {
+                            localCurrentlyCollapsed = !localCurrentlyCollapsed;
+                            localPage = 0;
+                        }}
+                    >
+                        {#if localCurrentlyCollapsed}
+                            <AngleDownIcon></AngleDownIcon> Show All
+                        {:else}
+                            <AngleUpIcon></AngleUpIcon> Collapse
+                        {/if}
+                    </button>
+                </div>
+            {/if}
+            {#if data.myRecentActivityStudysets?.length > 0}
+                <div class="flex" style="align-items: center; gap: 0.6rem; margin-top: 0.6rem;">
+                    <ClockIcon width="1.2rem" height="1.2rem"></ClockIcon><p class="h4" style="margin-bottom: 0px;">Recent</p>
+                </div>
+                <div
+                    class="grid list"
+                    style="overflow-wrap: anywhere; {collapseRecent &&
+                    data.myRecentActivityStudysets?.length > COLLAPSE_LENGTH_S
+                        ? 'margin-bottom: 0px;'
+                        : ''}"
+                >
+                    {#each recentCurrentlyCollapsed ? data.myRecentActivityStudysets.slice(0, COLLAPSE_LENGTH_S) : data.myRecentActivityStudysets as studyset}
+                        <StudysetLinkBox
+                            {studyset}
+                            linkTemplateFunc={recentLinkFunc}
+                            showDropdown={showRecentDropdown}
+                            dropdownContent={recentDropdownContent}
+                        ></StudysetLinkBox>
+                    {/each}
+                </div>
+                {#if collapseRecent && data.myRecentActivityStudysets?.length > COLLAPSE_LENGTH_S}
+                    <div
+                        class="flex center"
+                        style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
+                    >
+                        <button
+                            class="faint"
+                            onclick={() => {
+                                recentCurrentlyCollapsed =
+                                    !recentCurrentlyCollapsed;
+                            }}
+                        >
+                            {#if recentCurrentlyCollapsed}
+                                <AngleDownIcon></AngleDownIcon> Show All
+                            {:else}
+                                <AngleUpIcon></AngleUpIcon> Collapse
+                            {/if}
+                        </button>
+                    </div>
+                {/if}
+            {/if}
+            {#if data.mySavedStudysets?.length > 0}
+                <div class="flex" style="align-items: center; gap: 0.6rem; margin-top: 0.6rem;">
+                    <BookmarkIcon width="1.2rem" height="1.2rem"></BookmarkIcon> <p class="h4" style="margin-bottom: 0px;">Saved</p>
+                </div>
+                <div
+                    class="grid list"
+                    style="overflow-wrap: anywhere; {collapseSaved &&
+                    data.mySavedStudysets?.length > COLLAPSE_LENGTH
+                        ? 'margin-bottom: 0px;'
+                        : ''}"
+                >
+                    {#each savedCurrentlyCollapsed ? data.mySavedStudysets.slice(0, COLLAPSE_LENGTH) : data.mySavedStudysets as studyset}
+                        <StudysetLinkBox
+                            {studyset}
+                            linkTemplateFunc={cloudLinkTemplateFunc}
+                            showDropdown={showSavedDropdown}
+                            dropdownContent={savedDropdownContent}
+                        ></StudysetLinkBox>
+                    {/each}
+                </div>
+                {#if (collapseSaved && data.mySavedStudysets?.length > COLLAPSE_LENGTH) || (!savedCurrentlyCollapsed && (data.mySavedStudysetsPageInfo?.hasNextPage || data.mySavedStudysetsPageInfo?.hasPreviousPage))}
+                    {#if !savedCurrentlyCollapsed && (hasNextPageFunc("saved") || hasPrevPageFunc("saved"))}
+                        <div
+                            class={hasNextPageFunc("saved") &&
+                            hasPrevPageFunc("saved")
+                                ? "combo-buttons"
+                                : ""}
+                        >
+                            {#if hasPrevPageFunc("saved")}
+                                <button
+                                    class="button alt {hasNextPageFunc('saved')
+                                        ? 'left'
+                                        : ''}"
+                                    onclick={() => loadPage("saved", "prev")}
+                                >
+                                    <ArrowLeftIcon></ArrowLeftIcon> Previous
+                                </button>
+                            {/if}
+                            {#if hasNextPageFunc("saved")}
+                                <button
+                                    class="button alt {hasPrevPageFunc('saved')
+                                        ? 'right'
+                                        : ''}"
+                                    onclick={() => loadPage("saved", "next")}
+                                >
+                                    Next <ArrowRightIcon></ArrowRightIcon>
+                                </button>
+                            {/if}
+                        </div>
+                    {/if}
+                    <div
+                        class="flex center"
+                        style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
+                    >
+                        <button
+                            class="faint"
+                            onclick={() => {
+                                savedCurrentlyCollapsed =
+                                    !savedCurrentlyCollapsed;
+                                savedPage = 0;
+                            }}
+                        >
+                            {#if savedCurrentlyCollapsed}
+                                <AngleDownIcon></AngleDownIcon> Show All
+                            {:else}
+                                <AngleUpIcon></AngleUpIcon> Collapse
+                            {/if}
+                        </button>
+                    </div>
+                {/if}
+            {/if}
