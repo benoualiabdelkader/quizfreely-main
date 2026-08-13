@@ -5,6 +5,7 @@
     import { idbApiLayer } from "$lib/idb-api-layer/index.js";
     import Noscript from "$lib/components/Noscript.svelte";
     import StudysetList from "$lib/components/StudysetList.svelte";
+    import IELTSDailyTracker from "$lib/components/IELTSDailyTracker.svelte";
     import FolderPicker from "$lib/components/FolderPicker.svelte";
     import IconPlus from "$lib/icons/Plus.svelte";
     import FolderIcon from "$lib/icons/Folder.svelte";
@@ -285,6 +286,7 @@
             <BookmarkIcon></BookmarkIcon> Unsave
         </button>
     {/snippet}
+    <IELTSDailyTracker />
     <StudysetList
         data={studysetListData}
         cloudLinkTemplateFunc={(id) => `/studysets/${id}`}

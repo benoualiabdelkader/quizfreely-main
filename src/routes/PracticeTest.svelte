@@ -9,6 +9,7 @@
     import MCQ from "$lib/components/questions/MCQ.svelte";
     import FRQ from "$lib/components/questions/FRQ.svelte";
     import TFQ from "$lib/components/questions/TFQ.svelte";
+    import Unscramble from "$lib/components/questions/Unscramble.svelte";
     import { slide, fade } from "svelte/transition";
     import { goto } from "$app/navigation";
     import { setCancelBeforeNavigate } from "$lib/cancel-before-navigate.js";
@@ -21,8 +22,11 @@
     // maps questions from practice test data to objs with props for question components
     function mapPracticeTestQuestionToQuestionComponentFormat(q) {
         const cq = q?.mcq ?? q?.tfq ?? q?.frq;
+        const isUnscramble = q?.frq != null && (
+            (cq?.answerWith == "DEF" ? cq?.term?.term : cq?.term?.def)?.startsWith("[UNSCRAMBLE]\n")
+        );
         return {
-            type: q?.mcq != null ? "MCQ" : (q?.tfq != null ? "TFQ" : (q?.frq != null ? "FRQ" : "UNKNOWN")),
+            type: q?.mcq != null ? "MCQ" : (q?.tfq != null ? "TFQ" : (q?.frq != null ? (isUnscramble ? "UNSCRAMBLE" : "FRQ") : "UNKNOWN")),
             term: cq?.term,
             answerWith: cq?.answerWith,
             answeredIndex: q?.mcq?.answeredIndex,
@@ -349,75 +353,70 @@ FRQs: ${numFRQsToAssign}`,
         }
 
         function addMCQ(term) {
-            const pickedAnswerWith =
+            let hasExplicitDistractors = term.term && term.term.includes("\n[CHOICE] ");
+            const pickedAnswerWith = hasExplicitDistractors ? "DEF" : (
                 answerWith == "BOTH"
                     ? Math.random() < 0.5
                         ? "TERM"
                         : "DEF"
-                    : answerWith;
+                    : answerWith
+            );
             const pickedKey = pickedAnswerWith.toLowerCase();
+            
+            let explicitDistractors = [];
+            let questionTerm = {
+                id: term.id,
+                term: term.term,
+                def: term.def,
+                termImageUrl: term.termImageUrl,
+                defImageUrl: term.defImageUrl
+            };
+            if (hasExplicitDistractors) {
+                const parts = term.term.split("\n[CHOICE] ");
+                questionTerm.term = parts[0];
+                for (let i = 1; i < parts.length; i++) {
+                    explicitDistractors.push({
+                        id: term.id + "-d" + i,
+                        term: parts[i],
+                        def: parts[i],
+                        termImageUrl: null,
+                        defImageUrl: null
+                    });
+                }
+            }
+            
             let question = {
                 type: "MCQ",
-                term: {
-                    id: term.id,
-                    term: term.term,
-                    def: term.def,
-                    termImageUrl: term.termImageUrl,
-                    defImageUrl: term.defImageUrl
-                },
+                term: questionTerm,
                 answerWith: pickedAnswerWith,
             };
             question.distractors = [];
 
             function avgDistractorAnswerLength() {
-                if (
-                    question?.distractors == null ||
-                    question?.distractors?.length == 0
-                ) {
-                    return 0;
-                }
-
+                if (question?.distractors == null || question?.distractors?.length == 0) return 0;
                 let sum = 0;
-                question.distractors.forEach((d) => {
-                    sum += d?.[pickedKey]?.length ?? 0;
-                });
-                return sum / question?.distractors?.length;
+                question.distractors.forEach((d) => sum += d?.[pickedKey]?.length ?? 0);
+                return sum / question.distractors.length;
             }
 
             function loopAndPick(strictSameness) {
+                if (hasExplicitDistractors) {
+                    question.distractors = [...explicitDistractors];
+                    return;
+                }
                 const MAX_ITERATIONS_STRICT = 99;
                 const MAX_ITERATIONS_NOT_STRICT = 99;
                 const maxIterations = strictSameness ? MAX_ITERATIONS_STRICT : MAX_ITERATIONS_NOT_STRICT;
                 let ogDistractorsCount = 3;
                 let distractorsCount = 3;
                 let iterations = 0;
-                while (
-                    question.distractors.length < distractorsCount &&
-                    iterations <= maxIterations
-                ) {
+                while (question.distractors.length < distractorsCount && iterations <= maxIterations) {
                     iterations++;
-
-                    const randomTerm =
-                        terms[Math.floor(Math.random() * terms.length)];
-
-                    if (
-                        isSameTermOrContent(
-                            randomTerm,
-                            term,
-                            strictSameness,
-                            pickedKey
-                        ) ||
-                        question.distractors.some(
-                            (d) => isSameTermOrContent(
-                                randomTerm,
-                                d,
-                                strictSameness,
-                                pickedKey
-                            )
-                        )
+                    const randomTerm = terms[Math.floor(Math.random() * terms.length)];
+                    if (isSameTermOrContent(randomTerm, term, strictSameness, pickedKey) ||
+                        question.distractors.some((d) => isSameTermOrContent(randomTerm, d, strictSameness, pickedKey)) ||
+                        (randomTerm.term && randomTerm.term.includes("\n[CHOICE] "))
                     ) {
-                        /* if same id or content as answer or existing distractor
-                        then loop again without adding this random term */
                         continue;
                     }
 
@@ -429,22 +428,14 @@ FRQs: ${numFRQsToAssign}`,
                         defImageUrl: randomTerm?.defImageUrl
                     });
 
-                    if (
-                        question.distractors.length == ogDistractorsCount &&
-                        avgDistractorAnswerLength() < 40 &&
-                        Math.random() < 0.5
-                    ) {
+                    if (question.distractors.length == ogDistractorsCount && avgDistractorAnswerLength() < 40 && Math.random() < 0.5) {
                         distractorsCount++;
                     }
                 }
                 if (iterations > maxIterations && strictSameness) {
-                    /* try again without strictSameness */
                     loopAndPick(false);
                 } else if (iterations > maxIterations) {
-                    /* give up after maxIterations to avoid an infinite loop */
-                    console.warn(
-                        `(addMCQ) Took more than ${maxIterations} iterations to pick random term that wasn't a duplicate`,
-                    );
+                    console.warn(`(addMCQ) Took more than ${maxIterations} iterations to pick random term that wasn't a duplicate`);
                 }
             }
             loopAndPick(true);
@@ -453,37 +444,58 @@ FRQs: ${numFRQsToAssign}`,
         }
 
         function addTFQ(term) {
-            const pickedAnswerWith = answerWith == "BOTH"
+            let hasExplicitDistractors = term.term && term.term.includes("\n[CHOICE] ");
+            const pickedAnswerWith = hasExplicitDistractors ? "DEF" : (
+                answerWith == "BOTH"
                 ? Math.random() < 0.5
                     ? "TERM"
                     : "DEF"
-                : answerWith;
+                : answerWith
+            );
             const pickedKey = pickedAnswerWith.toLowerCase();
+            
+            let explicitDistractors = [];
+            let questionTerm = {
+                id: term.id,
+                term: term.term,
+                def: term.def,
+                termImageUrl: term.termImageUrl,
+                defImageUrl: term.defImageUrl
+            };
+            if (hasExplicitDistractors) {
+                const parts = term.term.split("\n[CHOICE] ");
+                questionTerm.term = parts[0];
+                for (let i = 1; i < parts.length; i++) {
+                    explicitDistractors.push({
+                        id: term.id + "-d" + i,
+                        term: parts[i],
+                        def: parts[i],
+                        termImageUrl: null,
+                        defImageUrl: null
+                    });
+                }
+            }
+
             let question = {
                 type: "TFQ",
-                term: {
-                    id: term.id,
-                    term: term.term,
-                    def: term.def,
-                    termImageUrl: term.termImageUrl,
-                    defImageUrl: term.defImageUrl
-                },
+                term: questionTerm,
                 answerWith: pickedAnswerWith
             };
 
             question.distractor = null;
             function loopAndPick(strictSameness) {
+                if (hasExplicitDistractors && explicitDistractors.length > 0) {
+                    question.distractor = explicitDistractors[Math.floor(Math.random() * explicitDistractors.length)];
+                    return;
+                }
+                
                 let iterations = 0;
                 while (question.distractor == null && iterations <= 99) {
                     iterations++;
-                    const randomTerm =
-                        terms[Math.floor(Math.random() * terms.length)];
-                    if (!isSameTermOrContent(
-                        randomTerm,
-                        term,
-                        strictSameness,
-                        pickedKey
-                    )) {
+                    const randomTerm = terms[Math.floor(Math.random() * terms.length)];
+                    if (!isSameTermOrContent(randomTerm, term, strictSameness, pickedKey) &&
+                        !(randomTerm.term && randomTerm.term.includes("\n[CHOICE] "))
+                    ) {
                         question.distractor = {
                             id: randomTerm.id,
                             term: randomTerm.term,
@@ -494,20 +506,10 @@ FRQs: ${numFRQsToAssign}`,
                     }
                 }
                 if (iterations > 99 && strictSameness) {
-                    /* try again without strictSameness */
                     loopAndPick(false);
                 } else if (iterations > 99) {
-                    console.warn(
-                        "(addTFQ) Over 99 iterations to pick random distractor term",
-                    );
-                    /* use fallback same term as distractor */
-                    question.distractor = {
-                        id: term.id,
-                        term: term.term,
-                        def: term.def,
-                        termImageUrl: term.termImageUrl,
-                        defImageUrl: term.defImageUrl
-                    };
+                    console.warn("(addTFQ) Over 99 iterations to pick random distractor term");
+                    question.distractor = questionTerm;
                 }
             }
             loopAndPick(true);
@@ -515,15 +517,24 @@ FRQs: ${numFRQsToAssign}`,
         }
 
         function addFRQ(term) {
+            let hasExplicitDistractors = term.term && term.term.includes("\n[CHOICE] ");
+            let pickedAnswerWith = hasExplicitDistractors ? "DEF" : (
+                answerWith == "BOTH"
+                ? Math.random() < 0.5
+                    ? "TERM"
+                    : "DEF"
+                : answerWith
+            );
+            
+            let questionTerm = term;
+            if (hasExplicitDistractors) {
+                questionTerm = { ...term, term: term.term.split("\n[CHOICE] ")[0] };
+            }
+            
             questions.push({
                 type: "FRQ",
-                term: term,
-                answerWith:
-                    answerWith == "BOTH"
-                        ? Math.random() < 0.5
-                            ? "TERM"
-                            : "DEF"
-                        : answerWith,
+                term: questionTerm,
+                answerWith: pickedAnswerWith,
             });
         }
 
@@ -1070,6 +1081,36 @@ questions { id }
                                     });
                                 }}
                             ></FRQ>
+                            {#if !data.alreadyOver}
+                                <div class="flex" style="margin-top: 1rem; justify-content: flex-end;">
+                                    <button class="button" onclick={() => handleQuestionAnswered(false)}>
+                                        {index === questions.length - 1 ? 'Submit Test' : 'Next Question'}
+                                    </button>
+                                </div>
+                            {/if}
+                        </div>
+                    {/if}
+                    {#if question.type == "UNSCRAMBLE"}
+                        <div class="glass-panel" style="padding: 2rem; border-radius: var(--radius-xl);">
+                            <Unscramble
+                                term={question.term}
+                                answerWith={question.answerWith}
+                                viewOnly={questionsViewOnly}
+                                showAccuracy={questionsShowAccuracy}
+                                {answerUpdateCallback}
+                                bind:this={questionComponents[index]}
+                                answeredString={question.answeredString}
+                                questionId={question.id}
+                                userMarkedCorrectChangeCallback={() => {
+                                    questionsCorrect = 0;
+                                    questionComponents.forEach((q) => {
+                                        const qData = q?.getQuestion?.()
+                                        if (qData?.mcq?.correct || qData?.tfq?.correct || qData?.frq?.correct) {
+                                            questionsCorrect++;
+                                        }
+                                    });
+                                }}
+                            ></Unscramble>
                             {#if !data.alreadyOver}
                                 <div class="flex" style="margin-top: 1rem; justify-content: flex-end;">
                                     <button class="button" onclick={() => handleQuestionAnswered(false)}>

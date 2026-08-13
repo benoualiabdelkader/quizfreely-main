@@ -48,6 +48,7 @@
     let removeTermImageModalIsDefSide;
     let editTitleValue = $state("");
     let editPrivate = $state(false);
+    var importTermsMode = $state("terms");
     let importTermsCustomTermdefDelimiterValue = $state("");
     let importTermsCustomRowDelimiterValue = $state("");
     let importTermsPasteValue = $state("");
@@ -1132,9 +1133,14 @@
             {#if showImportTermsModal}
                 <div class="modal" transition:fade={{ duration: 200 }}>
                     <div class="content">
+                        <div class="flex compact-gap" style="margin-bottom: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                            <button class="button-box {importTermsMode == 'terms' ? 'selected' : ''}" onclick={() => importTermsMode = 'terms'}>Terms & Definitions</button>
+                            <button class="button-box {importTermsMode == 'mcq' ? 'selected' : ''}" onclick={() => importTermsMode = 'mcq'}>Multiple Choice Questions</button>
+                            <button class="button-box {importTermsMode == 'unscramble' ? 'selected' : ''}" onclick={() => importTermsMode = 'unscramble'}>Sentence Unscramble</button>
+                        </div>
                         <div class="grid import-terms-split">
                             <div>
-                                <p>Between term & definition</p>
+                                <p>{importTermsMode == 'mcq' ? 'Between columns' : (importTermsMode == 'unscramble' ? 'Between Scrambled Words & Correct Sentence' : 'Between term & definition')}</p>
                                 <div
                                     class="flex compact-gap nowrap"
                                     style="flex-direction: column; align-items: start; align-content: start;"
@@ -1265,7 +1271,7 @@
                         <textarea
                             class="import-terms-paste-textarea vertical"
                             rows="3"
-                            placeholder="Paste data here, then press the import button"
+                            placeholder={importTermsMode == 'unscramble' ? "went / yesterday / to / the / park / we\twe went to the park yesterday" : (importTermsMode == 'mcq' ? "Question\tAnswer\tWrong1\tWrong2\tWrong3" : "Word1\tDefinition1\nWord2\tDefinition2")}
                             bind:value={importTermsPasteValue}
                         ></textarea>
                         <p class="fg0" style="font-size: 0.9rem; margin-top: 0.4rem;">Import from a link instead? <a href="/import" style="font-size: 0.9rem;">More Import Options</a></p>
@@ -1333,17 +1339,44 @@
                                     }
 
                                     var pastedData = importTermsPasteValue;
-                                    addTermsFrom2DArray(
-                                        pastedData
+                                    var parsedData;
+                                    
+                                    if (importTermsMode == 'mcq') {
+                                        const rows = pastedData.split(rowDelimiter);
+                                        parsedData = rows.map((row) => {
+                                            if (!row) return ["", ""];
+                                            const cols = row.split(termDefDelimiter);
+                                            if (cols.length >= 5) {
+                                                return [cols[0] + "\n[CHOICE] " + cols[2] + "\n[CHOICE] " + cols[3] + "\n[CHOICE] " + cols[4], cols[1]];
+                                            }
+                                            return [cols[0] || "", cols[1] || ""];
+                                        });
+                                    } else if (importTermsMode == 'unscramble') {
+                                        const rows = pastedData.split(rowDelimiter);
+                                        let hasError = false;
+                                        parsedData = rows.map((row, index) => {
+                                            if (!row.trim()) return ["", ""];
+                                            const cols = row.split(termDefDelimiter);
+                                            if (cols.length < 2 || !cols[0].trim() || !cols[1].trim()) {
+                                                hasError = true;
+                                            }
+                                            return ["[UNSCRAMBLE]\n" + (cols[0] || "").trim(), (cols[1] || "").trim()];
+                                        });
+                                        if (hasError) {
+                                            alert("Import failed: One or more rows are malformed. Each row must have scrambled words and a correct sentence, separated by the selected delimiter.");
+                                            return;
+                                        }
+                                    } else {
+                                        parsedData = pastedData
                                             .split(rowDelimiter)
                                             .map((row) =>
                                                 row
-                                                    ? row.split(
-                                                          termDefDelimiter,
-                                                      )
-                                                    : ["", ""],
-                                            ),
-                                    );
+                                                    ? row.split(termDefDelimiter)
+                                                    : ["", ""]
+                                            );
+                                    }
+                                    
+                                    addTermsFrom2DArray(parsedData);
 
                                     /* after importing, if there was a delimiter at the end, it will create a blank last term,
                       check the last term and remove it if it's blank */
