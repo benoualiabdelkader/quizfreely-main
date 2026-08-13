@@ -66,8 +66,13 @@
 /* Base Body Overrides */
 body {
 	background: var(--bg-0);
+	background-image: radial-gradient(at 0% 0%, rgba(108, 99, 255, 0.15) 0px, transparent 50%),
+					  radial-gradient(at 100% 0%, rgba(3, 218, 198, 0.15) 0px, transparent 50%),
+					  radial-gradient(at 100% 100%, rgba(108, 99, 255, 0.1) 0px, transparent 50%),
+					  radial-gradient(at 0% 100%, rgba(3, 218, 198, 0.1) 0px, transparent 50%);
+	background-attachment: fixed;
 	color: var(--fg-0);
-	font-family: 'Inter', 'Outfit', sans-serif;
+	font-family: 'Outfit', 'Inter', sans-serif;
 	letter-spacing: 0.02em;
 }
 
@@ -167,4 +172,18 @@ input:focus, textarea:focus {
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+}
+
+/* Floating Navbar */
+.navbar {
+	margin: 1rem auto;
+	width: calc(100% - 2rem);
+	max-width: 1200px;
+	border-radius: var(--radius-xl);
+	background: rgba(30, 30, 53, 0.6) !important;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+	padding: 0.5rem 1rem !important;
 }

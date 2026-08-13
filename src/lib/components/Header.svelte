@@ -31,9 +31,9 @@
       <div class={page.data?.header?.activePage == "explore" ? "current" : ""}>
         <a href="/explore">Explore</a>
       </div>
-      <!--<div class={ page.data?.header?.activePage == "classes" ? "current" : "" }>
-              <a href="/classes">Classes</a>
-            </div>-->
+      <div class={page.route?.id?.includes("wave-01") ? "current" : ""}>
+        <a href="/wave-01" style="color: var(--main); font-weight: 600;">Wave 01</a>
+      </div>
       <div class={page.data?.header?.activePage == "settings" ? "current" : ""}>
         <a href="/settings">Settings</a>
       </div>
