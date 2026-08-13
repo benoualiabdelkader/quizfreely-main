@@ -83,7 +83,7 @@
                 <button class="button main" onclick={() => showModal = true}><IconPlus /> Create Your First Round</button>
             </div>
         {:else}
-            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
                 {#each tense.roundIds as roundId, i}
                     {@const round = trackerState.rounds[roundId]}
                     {@const rProgress = trackerState.getRoundProgress(roundId)}

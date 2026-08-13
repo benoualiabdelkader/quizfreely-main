@@ -16,7 +16,7 @@
     <p class="fg1" style="margin-bottom: 2.5rem; font-size: 1.1rem; max-width: 600px;">Track your progress through the core English tenses. Master each tense by completing independent training rounds.</p>
 
     {#if trackerState.loaded}
-        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
             {#each Object.values(trackerState.tenses) as tense}
                 {@const progress = trackerState.getTenseProgress(tense.id)}
                 <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; height: 100%; border-radius: var(--radius-xl);">
