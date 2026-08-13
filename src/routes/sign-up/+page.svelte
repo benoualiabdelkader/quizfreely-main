@@ -4,6 +4,9 @@
   import { goto } from "$app/navigation";
   import { slide } from "svelte/transition";
   import Noscript from "$lib/components/Noscript.svelte";
+  import Card from "$lib/components/ui/Card.svelte";
+  import Input from "$lib/components/ui/Input.svelte";
+  import Button from "$lib/components/ui/Button.svelte";
 
   let { data } = $props();
 
@@ -104,46 +107,44 @@
   {/if}
   {#if data.authed}
     <div class="grid thin-centered">
-      <div class="content">
-        <div class="box" style="margin-top: 6rem;">
-          <p class="h3">You're signed in!</p>
-          <div class="flex">
-            <a href="/dashboard" class="button yay">Dashboard</a>
-            <a href="/settings" class="button yay alt">Settings</a>
-          </div>
+      <Card style="margin-top: 6rem; text-align: center;">
+        <p class="h3">You're signed in!</p>
+        <div class="flex center-h" style="gap: 1rem; margin-top: 1.5rem;">
+          <a href="/dashboard" style="text-decoration: none;"><Button variant="primary">Dashboard</Button></a>
+          <a href="/settings" style="text-decoration: none;"><Button variant="secondary">Settings</Button></a>
         </div>
-      </div>
+      </Card>
     </div>
   {:else}
     <div>
       <div class="grid thin-centered">
-        <div class="content">
-          <h2>Sign Up</h2>
-          <form>
-          <div>
-            <input
+        <Card>
+          <h2 style="margin-top: 0;">Sign Up</h2>
+          <form onsubmit={(ev) => {
+              ev.preventDefault();
+              signupSubmit();
+          }}>
+          <div style="margin-bottom: 1rem;">
+            <Input
               type="text"
-              class="fullWidth"
               bind:value={signupUsernameValue}
               placeholder="Username"
               name="username"
               autocomplete="username"
             />
           </div>
-          <div>
-            <input
+          <div style="margin-bottom: 1rem;">
+            <Input
               type="password"
-              class="fullWidth"
               bind:value={signupPasswordValue}
               placeholder="Password"
               name="password"
               autocomplete="new-password"
             />
           </div>
-          <div>
-            <input
+          <div style="margin-bottom: 1.5rem;">
+            <Input
               type="password"
-              class="fullWidth"
               bind:value={signupPasswordConfirmValue}
               placeholder="Retype Password"
               name="confirm-password"
@@ -151,10 +152,7 @@
             />
           </div>
           <div>
-            <button type="submit" onclick={(ev) => {
-                ev.preventDefault();
-                signupSubmit();
-            }}>Create account</button>
+            <Button variant="primary" type="submit" style="width: 100%;">Create account</Button>
           </div>
           </form>
           <div class="separator">or</div>
@@ -198,7 +196,9 @@
             {/if}
           </div>
           <div>
-            <button
+            <Button
+              variant="ghost"
+              style="width: 100%; margin-top: 1rem;"
               onclick={async () => {
                 await fetch("/dashboard/set-dashboard-state", {
                   method: "POST",
@@ -206,15 +206,14 @@
                 });
                 goto("/dashboard");
               }}
-              class="fullWidth noaccount-button"
             >
               Continue without an account
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
-      <div class="grid thin-centered">
-        <div class="content">
+      <div class="grid thin-centered" style="margin-top: 1rem;">
+        <div style="text-align: center;">
           <p class="center">
             <span class="fg0">By creating an account, you accept</span>
             <span class="line"

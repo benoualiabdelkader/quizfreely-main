@@ -1,0 +1,42 @@
+@layer components {
+    :root {
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --transition-fast: 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        
+        /* Answer State Tokens */
+        --yay: #10b981;
+        --yay-bg: color-mix(in srgb, var(--yay) 15%, transparent);
+        --ohno: #ef4444;
+        --ohno-bg: color-mix(in srgb, var(--ohno) 15%, transparent);
+    }
+
+    .glass-panel {
+        background: color-mix(in srgb, var(--bg-1) 60%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid color-mix(in srgb, var(--fg-0) 8%, transparent);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        border-radius: var(--radius-xl);
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, var(--main), color-mix(in srgb, var(--main) 50%, white));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .yay, .box.yay, button.yay, .button.yay {
+        background-color: var(--yay-bg) !important;
+        border-color: var(--yay) !important;
+        color: var(--yay) !important;
+    }
+    
+    .ohno, .box.ohno, button.ohno, .button.ohno {
+        background-color: var(--ohno-bg) !important;
+        border-color: var(--ohno) !important;
+        color: var(--ohno) !important;
+    }
+}

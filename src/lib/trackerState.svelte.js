@@ -9,16 +9,16 @@ export const DEFAULT_TENSES = [
 ];
 
 export const CHECKLIST_STEPS = [
-    { id: 'grammar', label: 'Grammar' },
-    { id: 'vocabulary', label: 'Vocabulary' },
-    { id: 'quizfreely', label: 'Quizfreely' },
-    { id: 'reading', label: 'Reading' },
-    { id: 'listening', label: 'Listening' },
-    { id: 'writing', label: 'Writing' },
-    { id: 'speaking', label: 'Speaking' },
-    { id: 'massiveExercises', label: 'Massive Exercises' },
-    { id: 'errorReview', label: 'Error Review' },
-    { id: 'checkpoint', label: 'Checkpoint' }
+    { id: 'grammar', label: 'Grammar', desc: 'Understand the target grammar' },
+    { id: 'vocabulary', label: 'Vocabulary', desc: 'Master this round\'s vocabulary' },
+    { id: 'quizfreely', label: 'Quizfreely', desc: 'Active recall and drilling' },
+    { id: 'reading', label: 'Reading', desc: 'Contextual understanding' },
+    { id: 'listening', label: 'Listening', desc: 'Audio comprehension' },
+    { id: 'writing', label: 'Writing', desc: 'Produce grammar independently' },
+    { id: 'speaking', label: 'Speaking', desc: 'Produce grammar naturally' },
+    { id: 'massiveExercises', label: 'Massive Exercises', desc: 'Intensive pattern drilling' },
+    { id: 'errorReview', label: 'Error Review', desc: 'Turn mistakes into learning' },
+    { id: 'checkpoint', label: 'Checkpoint', desc: 'Final mission evaluation' }
 ];
 
 export function createTrackerState() {
@@ -29,8 +29,8 @@ export function createTrackerState() {
     function init() {
         if (loaded) return;
         if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-            const storedTenses = localStorage.getItem('wave01_tenses');
-            const storedRounds = localStorage.getItem('wave01_rounds');
+            const storedTenses = localStorage.getItem('wave01_tenses_v2');
+            const storedRounds = localStorage.getItem('wave01_rounds_v2');
             
             if (storedTenses) {
                 try { tensesData = JSON.parse(storedTenses); } catch (e) {}
@@ -51,17 +51,25 @@ export function createTrackerState() {
 
     function save() {
         if (!loaded || typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-        localStorage.setItem('wave01_tenses', JSON.stringify(tensesData));
-        localStorage.setItem('wave01_rounds', JSON.stringify(roundsData));
+        localStorage.setItem('wave01_tenses_v2', JSON.stringify(tensesData));
+        localStorage.setItem('wave01_rounds_v2', JSON.stringify(roundsData));
     }
 
     function createRound(tenseId, name, description, vocabularyInfo) {
         const roundId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
         
-        const checklist = {};
-        CHECKLIST_STEPS.forEach(step => {
-            checklist[step.id] = false;
-        });
+        const checklist = {
+            grammar: { completed: false, tasks: { read: false, examples: false, structure: false, rules: false, mistakes: false } },
+            vocabulary: { completed: false },
+            quizfreely: { completed: false, score: '', questions: '', tasks: { vocab: false, grammar: false, sentence: false, wrong: false } },
+            reading: { completed: false, score: '', tasks: { first: false, grammar: false, vocab: false, comp: false, gram: false } },
+            listening: { completed: false, score: '', tasks: { round1: false, round2: false, round3: false, round4: false, round5: false } },
+            writing: { completed: false, scores: { grammar: '', vocab: '', clarity: '' }, tasks: { level1: false, level2: false, level3: false, checkGrammar: false, checkVerb: false, checkOrder: false, checkVocab: false, checkSpell: false, checkPunct: false } },
+            speaking: { completed: false, scores: { grammar: '', vocab: '', fluency: '', pronunc: '' }, tasks: { level1: false, level2: false, level3: false, level4: false, checkGrammar: false, checkVocab: false, checkRead: false, checkListen: false } },
+            massiveExercises: { completed: false, scoreInfo: { total: '', correct: '', wrong: '', percent: '' }, tasks: { cat1: false, cat2: false, cat3: false, cat4: false, cat5: false, cat6: false, cat7: false, cat8: false } },
+            errorReview: { completed: false, errors: [] }, // { id, wrong, correct, why, status: { reviewed, understood, practiced, fixed } }
+            checkpoint: { completed: false, passed: false, scores: { grammar: '', vocab: '', reading: '', listening: '', writing: '', speaking: '', mixed: '' }, overall: '' }
+        };
 
         roundsData[roundId] = {
             id: roundId,
@@ -81,9 +89,9 @@ export function createTrackerState() {
         return roundId;
     }
 
-    function toggleChecklistStep(roundId, stepId) {
+    function updateRoundState(roundId, mutateFn) {
         if (roundsData[roundId]) {
-            roundsData[roundId].checklist[stepId] = !roundsData[roundId].checklist[stepId];
+            mutateFn(roundsData[roundId]);
             save();
         }
     }
@@ -93,14 +101,29 @@ export function createTrackerState() {
         if (!round) return { completed: 0, total: 10, percent: 0, status: 'NOT STARTED' };
         
         let completed = 0;
+        let core9Completed = 0;
+        
         for (const step of CHECKLIST_STEPS) {
-            if (round.checklist[step.id]) completed++;
+            if (round.checklist[step.id]?.completed) {
+                completed++;
+                if (step.id !== 'checkpoint') core9Completed++;
+            }
         }
         
         const percent = Math.round((completed / 10) * 100);
         let status = 'IN PROGRESS';
-        if (completed === 0) status = 'NOT STARTED';
-        if (completed === 10) status = 'COMPLETED';
+        
+        if (completed === 0) {
+            status = 'NOT STARTED';
+        } else if (core9Completed === 9 && !round.checklist.checkpoint.completed) {
+            status = 'READY FOR CHECKPOINT';
+        } else if (round.checklist.checkpoint.completed) {
+            if (round.checklist.checkpoint.passed) {
+                status = 'COMPLETED';
+            } else {
+                status = 'NEEDS REVIEW';
+            }
+        }
         
         return { completed, total: 10, percent, status };
     }
@@ -135,7 +158,7 @@ export function createTrackerState() {
         init,
         save,
         createRound,
-        toggleChecklistStep,
+        updateRoundState,
         getRoundProgress,
         getTenseProgress
     };

@@ -6,9 +6,12 @@
   import IconUser from "$lib/icons/User.svelte";
   import IconMenu from "$lib/icons/Menu.svelte";
   import IconCloseXMark from "$lib/icons/CloseXMark.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
+  import Card from "$lib/components/ui/Card.svelte";
 
   beforeNavigate(function (navigation) {
-    document.getElementById("nav-menu-toggle").checked = false;
+    const toggle = document.getElementById("nav-menu-toggle");
+    if (toggle) toggle.checked = false;
   });
 </script>
 
@@ -17,23 +20,25 @@
   transition:slide={{ duration: 400 }}
 >
   <div class="menu">
-    <input type="checkbox" id="nav-menu-toggle" class="nav-menu-toggle" />
-    <label for="nav-menu-toggle" class="nav-menu-open">
+    <input type="checkbox" id="nav-menu-toggle" class="nav-menu-toggle" aria-expanded="false" aria-controls="nav-menu-id" />
+    <label for="nav-menu-toggle" class="nav-menu-open" aria-label="Toggle navigation menu">
       <IconMenu width="1.2rem" height="1.2rem" />
     </label>
-    <label for="nav-menu-toggle" class="nav-menu-close">
+    <label for="nav-menu-toggle" class="nav-menu-close" aria-label="Close navigation menu">
       <IconCloseXMark width="1.4rem" height="1.4rem" />
     </label>
-    <div class="nav-menu">
+    <div class="nav-menu" id="nav-menu-id">
       <div class={page.data?.header?.activePage == "home" ? "current" : ""}>
         <a href="/home">Home</a>
       </div>
       <div class={page.data?.header?.activePage == "explore" ? "current" : ""}>
         <a href="/explore">Explore</a>
       </div>
-      <div class={page.route?.id?.includes("wave-01") ? "current" : ""}>
-        <a href="/wave-01" style="color: var(--main); font-weight: 600;">Wave 01</a>
+      {#if page.data?.authed}
+      <div class={page.data?.header?.activePage == "dashboard" ? "current" : ""}>
+        <a href="/dashboard">Dashboard</a>
       </div>
+      {/if}
       <div class={page.data?.header?.activePage == "settings" ? "current" : ""}>
         <a href="/settings">Settings</a>
       </div>
@@ -44,48 +49,33 @@
   </div>
   <div class="status">
     {#if page.data?.authed}
-      <!--<div class="dropdown" tabindex="0" style="margin-top:0px;margin-bottom:0px;margin-left:1rem;margin-right:1rem">
-                {#if page.data.authedUser.display_name.length < 10 }
-                    <button class="faint">
-                      <IconUser />
-                      { page.data.authedUser.display_name }
-                    </button>
-                {:else}
-                    <button class="faint">
-                      <IconUser />
-                      Signed in
-                    </button>
-                {/if}
-                <div class="content" style="right:0">
-                  <a href="/users/{ page.data.authedUser.id }" class="button">Profile</a>
-                  <a href="/settings" class="button">Settings</a>
-                </div>
-            </div>-->
-      <div
-        style="margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:1rem"
+      <Dropdown
+        container={{ style: "margin-right: 1rem; display: flex;" }}
+        button={{ class: "btn btn-ghost btn-sm", "aria-label": "User menu" }}
+        div={{ style: "margin-top: 0.5rem;" }}
       >
-        <a href="/users/{page.data.authedUser?.id}" class="button faint">
+        {#snippet buttonContent()}
           <IconUser />
-          <span class="hide-on-mobile-for-compactness"
-            >{page.data.authedUser.displayName.length < 10
+          <span class="hide-on-mobile-for-compactness">
+            {page.data.authedUser.displayName.length < 10
               ? page.data.authedUser.displayName
-              : "Signed in"}</span
-          >
-        </a>
-      </div>
+              : "Signed in"}
+          </span>
+        {/snippet}
+        {#snippet divContent(hide)}
+          <Card class="user-dropdown-card">
+            <a href="/users/{page.data.authedUser?.id}" class="btn btn-secondary btn-md" onclick={hide}>Profile</a>
+            <a href="/settings" class="btn btn-secondary btn-md" onclick={hide}>Settings</a>
+          </Card>
+        {/snippet}
+      </Dropdown>
     {:else if page.data?.header?.showSignUpLink}
-      <div
-        class="flex"
-        style="margin-top:0px;margin-bottom:0px;margin-left:1rem;margin-right:1rem"
-      >
-        <a href="/sign-up" class="button alt">Sign up</a>
+      <div class="flex" style="margin-right:1rem">
+        <a href="/sign-up" class="btn btn-secondary btn-sm">Sign up</a>
       </div>
     {:else}
-      <div
-        class="flex"
-        style="margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:1rem"
-      >
-        <a href="/sign-in" class="button alt">Sign in</a>
+      <div class="flex" style="margin-right:1rem">
+        <a href="/sign-in" class="btn btn-secondary btn-sm">Sign in</a>
       </div>
     {/if}
   </div>
@@ -105,5 +95,18 @@
     .hide-on-mobile-for-compactness {
       display: none;
     }
+  }
+  
+  :global(.user-dropdown-card) {
+    padding: 1rem !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  }
+  :global(.user-dropdown-card a) {
+    text-align: left;
+    justify-content: flex-start !important;
   }
 </style>

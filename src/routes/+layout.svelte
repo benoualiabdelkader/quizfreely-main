@@ -2,6 +2,7 @@
 import Header from "$lib/components/Header.svelte";
 import Footer from "$lib/components/Footer.svelte";
 import "../app.css";
+import "$lib/theme-extensions.css";
 import { fade } from "svelte/transition";
 import { sineIn, sineOut } from "svelte/easing";
 import NProgress from "nprogress";

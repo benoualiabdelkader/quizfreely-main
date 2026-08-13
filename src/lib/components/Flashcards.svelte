@@ -5,6 +5,8 @@
     import IconArrowLeft from "$lib/icons/ArrowLeft.svelte";
     import IconArrowRight from "$lib/icons/ArrowRight.svelte";
     import IconBackArrow from "$lib/icons/BackArrow.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import Card from "$lib/components/ui/Card.svelte";
 
     let {
         termsList = true,
@@ -161,9 +163,7 @@
                 }}
             >
                 <div class="content">
-                    <div
-                        class="front"
-                    >
+                    <Card class="front" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; border-radius: var(--radius-xl);">
                         <div>
                             {#if showPrompt}
                                 {@render prompt?.()}
@@ -174,10 +174,8 @@
                                 {/if}
                             {/if}
                         </div>
-                    </div>
-                    <div
-                        class="back"
-                    >
+                    </Card>
+                    <Card class="back" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; border-radius: var(--radius-xl);">
                         <div>
                             {#if !showPrompt}
                                 <div style="white-space:pre-wrap">{(termsList ? terms?.[index] : term)?.def ?? "definition"}</div>
@@ -186,49 +184,45 @@
                                 {/if}
                             {/if}
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
             {/key}
         </div>
     </div>
     <div class="caption">
-        <div
-            class="progress-bar thin yay"
-            style="margin-left: 0.4rem; margin-right: 0.4rem;"
-        >
-            <div
-                style="width: {terms != null
-                    ? ((index + 1) / terms?.length) *
-                      100
-                    : '20'}%"
-            ></div>
+        <div class="progress-bar thin" style="margin-left: 0.4rem; margin-right: 0.4rem; background: var(--bg-2); border-radius: 4px; overflow: hidden; height: 6px;">
+            <div style="background: var(--main); height: 100%; transition: width var(--transition-fast); width: {terms != null ? ((index + 1) / terms?.length) * 100 : '20'}%;"></div>
         </div>
     </div>
     <div class="caption centerThree">
         <p>{index + 1}<span class="fg0">/{terms?.length ?? "?"}</span></p>
-        <div class="flex justifyselfcenter compact-gap">
-            <button
-                class="faint"
+        <div class="flex justifyselfcenter compact-gap" style="gap: 1rem;">
+            <Button
+                variant="ghost"
                 aria-label="Previous Card"
                 onclick={prev}
                 disabled={showPrompt}
+                style="padding: 0.5rem;"
             >
                 <IconArrowLeft />
-            </button>
-            <button
-                class="faint"
+            </Button>
+            <Button
+                variant="ghost"
                 onclick={flip}
-                disabled={showPrompt}>Flip</button
+                disabled={showPrompt}
             >
-            <button
-                class="faint"
+                Flip
+            </Button>
+            <Button
+                variant="ghost"
                 aria-label="Next Card"
                 onclick={next}
                 disabled={showPrompt}
+                style="padding: 0.5rem;"
             >
                 <IconArrowRight />
-            </button>
+            </Button>
         </div>
         <div class="flex end">
             {@render captionEnd?.()}

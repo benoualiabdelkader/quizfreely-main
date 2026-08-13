@@ -3,6 +3,8 @@
     import { onMount } from "svelte";
     import { slide, scale } from "svelte/transition";
     import StudysetLinkBox from "$lib/components/StudysetLinkBox.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import Card from "$lib/components/ui/Card.svelte";
     import MoreIcon from "$lib/icons/MoreDotsVertical.svelte";
     import LocalIcon from "$lib/icons/Local.svelte";
     import BookmarkIcon from "$lib/icons/Bookmark.svelte";
@@ -197,18 +199,13 @@
         style="overflow-wrap: anywhere; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;"
     >
         {#each data.myFolders as folder}
-            <a
-                class="glass-panel"
-                style="display: flex; align-items: center; gap: 0.8rem; padding: 1.2rem; border-radius: var(--radius-lg); text-decoration: none; color: var(--fg-0); font-weight: 600; transition: all var(--transition-fast);"
-                href="/folder/{folder.id}"
-                transition:scale={{ duration: 200 }}
-                onmouseover={(e) => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'; }}
-                onmouseout={(e) => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='0 8px 32px 0 rgba(0, 0, 0, 0.3)'; }}
-            >
-                <div style="background: rgba(108, 99, 255, 0.2); padding: 0.5rem; border-radius: 50%; color: var(--main); display: flex;">
-                    <FolderIcon></FolderIcon>
-                </div>
-                {folder.name}
+            <a href="/folder/{folder.id}" style="text-decoration: none;" transition:scale={{ duration: 200 }}>
+                <Card interactive={true} style="display: flex; align-items: center; gap: 0.8rem; padding: 1.2rem; font-weight: 600;">
+                    <div style="background: color-mix(in srgb, var(--main) 20%, transparent); padding: 0.5rem; border-radius: 50%; color: var(--main); display: flex;">
+                        <FolderIcon></FolderIcon>
+                    </div>
+                    <span style="color: var(--fg-0);">{folder.name}</span>
+                </Card>
             </a>
         {/each}
     </div>
@@ -236,52 +233,30 @@
                 </div>
                 {#if (collapseCloud && data.studysetList?.length > COLLAPSE_LENGTH) || (!cloudCurrentlyCollapsed && (data.studysetListPageInfo?.hasNextPage || data.studysetListPageInfo?.hasPreviousPage))}
                     {#if !cloudCurrentlyCollapsed && (hasNextPageFunc("cloud") || hasPrevPageFunc("cloud"))}
-                        <div
-                            class={hasNextPageFunc("cloud") &&
-                            hasPrevPageFunc("cloud")
-                                ? "combo-buttons"
-                                : ""}
-                        >
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
                             {#if hasPrevPageFunc("cloud")}
-                                <button
-                                    class="button alt {hasNextPageFunc('cloud')
-                                        ? 'left'
-                                        : ''}"
-                                    onclick={() => loadPage("cloud", "prev")}
-                                >
+                                <Button variant="secondary" onclick={() => loadPage("cloud", "prev")}>
                                     <ArrowLeftIcon></ArrowLeftIcon> Previous
-                                </button>
+                                </Button>
                             {/if}
                             {#if hasNextPageFunc("cloud")}
-                                <button
-                                    class="button alt {hasPrevPageFunc('cloud')
-                                        ? 'right'
-                                        : ''}"
-                                    onclick={() => loadPage("cloud", "next")}
-                                >
+                                <Button variant="secondary" onclick={() => loadPage("cloud", "next")}>
                                     Next <ArrowRightIcon></ArrowRightIcon>
-                                </button>
+                                </Button>
                             {/if}
                         </div>
                     {/if}
-                    <div
-                        class="flex center"
-                        style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
-                    >
-                        <button
-                            class="faint"
-                            onclick={() => {
-                                cloudCurrentlyCollapsed =
-                                    !cloudCurrentlyCollapsed;
-                                cloudPage = 0;
-                            }}
-                        >
+                    <div class="flex center" style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;">
+                        <Button variant="ghost" onclick={() => {
+                            cloudCurrentlyCollapsed = !cloudCurrentlyCollapsed;
+                            cloudPage = 0;
+                        }}>
                             {#if cloudCurrentlyCollapsed}
                                 <AngleDownIcon></AngleDownIcon> Show All
                             {:else}
                                 <AngleUpIcon></AngleUpIcon> Collapse
                             {/if}
-                        </button>
+                        </Button>
                     </div>
                 {/if}
             {/if}
@@ -314,51 +289,30 @@
             {/if}
             {#if (collapseLocal && localStudysetList?.length > COLLAPSE_LENGTH) || (!localCurrentlyCollapsed && localStudysetList?.length > EXPANDED_PER_PAGE)}
                 {#if !localCurrentlyCollapsed && (hasNextPageFunc("local") || hasPrevPageFunc("local"))}
-                    <div
-                        class={hasNextPageFunc("local") &&
-                        hasPrevPageFunc("local")
-                            ? "combo-buttons"
-                            : ""}
-                    >
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
                         {#if hasPrevPageFunc("local")}
-                            <button
-                                class="button alt {hasNextPageFunc('local')
-                                    ? 'left'
-                                    : ''}"
-                                onclick={() => localPage--}
-                            >
+                            <Button variant="secondary" onclick={() => localPage--}>
                                 <ArrowLeftIcon></ArrowLeftIcon> Previous
-                            </button>
+                            </Button>
                         {/if}
                         {#if hasNextPageFunc("local")}
-                            <button
-                                class="button alt {hasPrevPageFunc('local')
-                                    ? 'right'
-                                    : ''}"
-                                onclick={() => localPage++}
-                            >
+                            <Button variant="secondary" onclick={() => localPage++}>
                                 Next <ArrowRightIcon></ArrowRightIcon>
-                            </button>
+                            </Button>
                         {/if}
                     </div>
                 {/if}
-                <div
-                    class="flex center"
-                    style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;"
-                >
-                    <button
-                        class="faint"
-                        onclick={() => {
-                            localCurrentlyCollapsed = !localCurrentlyCollapsed;
-                            localPage = 0;
-                        }}
-                    >
+                <div class="flex center" style="width: 100%; margin-top: 0.6rem; flex-direction: column; align-items: center; gap: 0.8rem;">
+                    <Button variant="ghost" onclick={() => {
+                        localCurrentlyCollapsed = !localCurrentlyCollapsed;
+                        localPage = 0;
+                    }}>
                         {#if localCurrentlyCollapsed}
                             <AngleDownIcon></AngleDownIcon> Show All
                         {:else}
                             <AngleUpIcon></AngleUpIcon> Collapse
                         {/if}
-                    </button>
+                    </Button>
                 </div>
             {/if}
             {#if data.myRecentActivityStudysets?.length > 0}

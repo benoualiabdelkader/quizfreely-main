@@ -7,6 +7,10 @@
     import StudysetList from "$lib/components/StudysetList.svelte";
     import IELTSDailyTracker from "$lib/components/IELTSDailyTracker.svelte";
     import FolderPicker from "$lib/components/FolderPicker.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import Modal from "$lib/components/ui/Modal.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
+    import EmptyState from "$lib/components/ui/EmptyState.svelte";
     import IconPlus from "$lib/icons/Plus.svelte";
     import FolderIcon from "$lib/icons/Folder.svelte";
     import BookmarkIcon from "$lib/icons/Bookmark.svelte";
@@ -200,30 +204,33 @@
     {/if}
     {#snippet topMenu()}
         <div class="flex" style="gap: 1rem; margin-bottom: 2rem;">
-            <button class="glass-panel" style="background: var(--main); border-color: transparent; box-shadow: 0 4px 16px var(--main-glow);" onclick={() => newStudysetButton()}>
+            <Button variant="primary" onclick={() => newStudysetButton()}>
                 <IconPlus />
                 New Studyset
-            </button>
-            <a href="/import" class="button alt glass-panel">
-                <EnterIcon></EnterIcon>
-                Import
+            </Button>
+            <a href="/import" style="text-decoration: none;">
+                <Button variant="secondary">
+                    <EnterIcon></EnterIcon>
+                    Import
+                </Button>
             </a>
             {#if data.authed}
-                <button class="alt glass-panel" onclick={() => openNewFolderModal()}>
+                <Button variant="secondary" onclick={() => openNewFolderModal()}>
                     <FolderIcon></FolderIcon>
                     New Folder
-                </button>
+                </Button>
             {/if}
         </div>
     {/snippet}
     {#snippet emptyMsg()}
-        <div class="glass-panel flex center-h center-v" style="padding: 3rem 2rem; flex-direction: column; gap: 1rem; text-align: center; border-radius: var(--radius-xl); margin-top: 2rem;">
-            <div style="background: var(--bg-2); padding: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <FolderIcon width="2rem" height="2rem"></FolderIcon>
-            </div>
-            <p class="h3" style="margin: 0;">It's a bit empty here...</p>
-            <p class="fg1">Select "New Studyset" to enter or import terms and begin your learning journey!</p>
-        </div>
+        <EmptyState 
+            title="It's a bit empty here..." 
+            description="Select 'New Studyset' to enter or import terms and begin your learning journey!"
+        >
+            {#snippet icon()}
+                <FolderIcon width="3rem" height="3rem" />
+            {/snippet}
+        </EmptyState>
     {/snippet}
     {#snippet cloudDropdownContent(studyset)}
         <button
@@ -286,7 +293,6 @@
             <BookmarkIcon></BookmarkIcon> Unsave
         </button>
     {/snippet}
-    <IELTSDailyTracker />
     <StudysetList
         data={studysetListData}
         cloudLinkTemplateFunc={(id) => `/studysets/${id}`}
@@ -305,58 +311,61 @@
         {savedDropdownContent}
         {topMenu}
     ></StudysetList>
-</div>
-{#if showNewFolderModal}
-    <div class="modal" transition:fade={{ duration: 200 }}>
-        <div class="content" style="min-width: 0px;">
-            <p class="fg0">Create New Folder:</p>
-            <input
-                type="text"
-                placeholder="Folder Name"
-                class="title-textbox"
-                style="margin-top: 0.4rem; min-width: 18rem; max-width: 90vw;"
-                bind:value={newFolderName}
-                bind:this={newFolderInput}
-                onkeyup={(e) => {
-                    if (e.key == "Enter") {
-                        if (ignoreEnterOnceNewFolder) {
-                            ignoreEnterOnceNewFolder = false;
-                            return;
-                        }
-                        newFolderOnclick();
-                    }
-                }}
-            />
-            <div class="flex">
-                <button class="button-box {newFolderPrivate ? "" : "selected"}" onclick={() => {
-                    newFolderPrivate = false;
-                }}>
-                    <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
-                    Public
-                </button>
-                <button class="button-box {newFolderPrivate ? "selected" : ""}" onclick={() => {
-                    newFolderPrivate = true;
-                }}>
-                    <CheckmarkIcon class="button-box-selected-icon"></CheckmarkIcon>
-                    Private
-                </button>
-            </div>
-            <div class="flex" style="margin-top: 2rem;">
-                <button onclick={newFolderOnclick}>
-                    Create
-                </button>
-                <button class="alt" onclick={hideNewFolderModal}>
-                    Cancel
-                </button>
-            </div>
-            {#if showErrInNewFolderModal}
-                <div class="box ohno" transition:slide={{ duration: 400 }}>
-                    <p>{errInNewFolderModalMsg}</p>
-                </div>
-            {/if}
+    
+    <details class="my-tools-section" style="margin-top: 3rem; margin-bottom: 2rem;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 1.1rem; color: var(--fg-1); padding: 0.5rem 0;">
+            Practice Add-ons & Trackers
+        </summary>
+        <div style="margin-top: 1rem;">
+            <IELTSDailyTracker />
         </div>
+    </details>
+</div>
+<Modal open={showNewFolderModal} title="Create New Folder" onClose={hideNewFolderModal}>
+    <Input
+        type="text"
+        placeholder="Folder Name"
+        style="margin-bottom: 1.5rem;"
+        bind:value={newFolderName}
+        bind:this={newFolderInput}
+        onkeyup={(e) => {
+            if (e.key == "Enter") {
+                if (ignoreEnterOnceNewFolder) {
+                    ignoreEnterOnceNewFolder = false;
+                    return;
+                }
+                newFolderOnclick();
+            }
+        }}
+    />
+    <div class="flex" style="gap: 1rem;">
+        <Button variant={newFolderPrivate ? "secondary" : "primary"} onclick={() => {
+            newFolderPrivate = false;
+        }}>
+            {#if !newFolderPrivate}<CheckmarkIcon />{/if}
+            Public
+        </Button>
+        <Button variant={newFolderPrivate ? "primary" : "secondary"} onclick={() => {
+            newFolderPrivate = true;
+        }}>
+            {#if newFolderPrivate}<CheckmarkIcon />{/if}
+            Private
+        </Button>
     </div>
-{/if}
+    <div class="flex" style="margin-top: 2rem; gap: 1rem;">
+        <Button variant="primary" onclick={newFolderOnclick}>
+            Create
+        </Button>
+        <Button variant="ghost" onclick={hideNewFolderModal}>
+            Cancel
+        </Button>
+    </div>
+    {#if showErrInNewFolderModal}
+        <div class="box ohno" transition:slide={{ duration: 400 }} style="margin-top: 1rem;">
+            <p>{errInNewFolderModalMsg}</p>
+        </div>
+    {/if}
+</Modal>
 {#snippet folderPickerErrMsg()}
     <div class="box ohno" transition:slide={{ duration: 400 }}>
         <p>Error adding to/changing folder :(</p>

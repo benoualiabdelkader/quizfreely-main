@@ -10,6 +10,10 @@ services:
     startCommand: node server.js
 
     envVars:
+      # Use a modern Node.js version required by SvelteKit 5
+      - key: NODE_VERSION
+        value: "20"
+
       # Port Render assigns
       - key: PORT
         value: 10000
