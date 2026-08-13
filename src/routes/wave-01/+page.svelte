@@ -1,6 +1,8 @@
 <script>
     import { onMount } from "svelte";
     import { trackerState } from "$lib/trackerState.svelte.js";
+    import Card from "$lib/components/ui/Card.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
 
     onMount(() => {
         trackerState.init();
@@ -19,7 +21,7 @@
         <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
             {#each Object.values(trackerState.tenses) as tense}
                 {@const progress = trackerState.getTenseProgress(tense.id)}
-                <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; height: 100%; border-radius: var(--radius-xl);">
+                <Card style="padding: 1.5rem; display: flex; flex-direction: column; height: 100%;">
                     <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.35rem;">{tense.name}</h3>
                     <p class="fg1" style="font-size: 0.95rem; margin-bottom: 1.5rem; flex-grow: 1;">{tense.description}</p>
                     
@@ -29,8 +31,8 @@
                             <span class="fg1">{progress.completedRounds} Completed</span>
                         </div>
                         
-                        <div class="flex center" style="gap: 0.75rem;">
-                            <div style="flex-grow: 1; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden;">
+                        <div class="flex center-v" style="gap: 0.75rem;">
+                            <div style="flex-grow: 1; height: 10px; background: var(--bg-2); border-radius: 5px; overflow: hidden;">
                                 <div style="height: 100%; width: {progress.percent}%; background: linear-gradient(90deg, var(--main), #03DAC6); transition: width 0.4s ease;"></div>
                             </div>
                             <span style="font-weight: 600; font-size: 1rem;">{progress.percent}%</span>
@@ -38,9 +40,11 @@
                     </div>
                     
                     <div class="flex center compact-gap">
-                        <a href="/wave-01/tense/{tense.id}" class="button main" style="flex: 1; justify-content: center; height: 3rem;">Open Tense</a>
+                        <a href="/wave-01/tense/{tense.id}" style="width: 100%; text-decoration: none;">
+                            <Button variant="primary" style="width: 100%; justify-content: center; height: 3rem;">Open Tense</Button>
+                        </a>
                     </div>
-                </div>
+                </Card>
             {/each}
         </div>
     {:else}

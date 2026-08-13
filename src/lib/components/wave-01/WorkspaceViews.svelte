@@ -1,5 +1,8 @@
 <script>
     import { trackerState } from "$lib/trackerState.svelte.js";
+    import Card from "$lib/components/ui/Card.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
 
     let { round, activeStage, onClose } = $props();
 
@@ -55,10 +58,10 @@
 </script>
 
 <div class="workspace-header flex justify-between" style="margin-bottom: 1.5rem; align-items: center;">
-    <button class="button alt" style="background: rgba(255,255,255,0.05);" onclick={onClose}>&larr; Back to Round Checklist</button>
+    <Button variant="secondary" onclick={onClose}>&larr; Back to Round Checklist</Button>
 </div>
 
-<div class="glass-panel" style="padding: 2.5rem; border-radius: var(--radius-xl); margin-bottom: 3rem;">
+<Card style="padding: 2.5rem; margin-bottom: 3rem;">
     {#if activeStage === 'grammar'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">1. Grammar</h2>
         <p class="fg1">Understand the grammar before intensive practice.</p>
@@ -80,7 +83,7 @@
             <label class="flex center compact-gap checkbox-label"><input type="checkbox" bind:checked={round.checklist.grammar.tasks.mistakes} onchange={saveState} /> Review common mistakes</label>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Grammar Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Grammar Complete</Button>
 
     {:else if activeStage === 'vocabulary'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">2. Vocabulary</h2>
@@ -97,7 +100,7 @@
             </ul>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Vocabulary Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Vocabulary Complete</Button>
 
     {:else if activeStage === 'quizfreely'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">3. Quizfreely</h2>
@@ -106,7 +109,9 @@
         <div style="margin: 2rem 0; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md);">
             <h3 style="margin-top: 0;">Quizfreely Study Set</h3>
             <p class="fg1">"{round.name}"</p>
-            <a href="/home" target="_blank" class="button alt" style="display: inline-flex; margin-top: 0.5rem;">Open Quizfreely in New Tab</a>
+            <a href="/home" target="_blank" style="text-decoration: none;">
+                <Button variant="secondary" style="margin-top: 0.5rem;">Open Quizfreely in New Tab</Button>
+            </a>
         </div>
         
         <h3 style="margin-bottom: 1rem;">Checklist</h3>
@@ -120,15 +125,15 @@
         <div class="flex compact-gap" style="margin-bottom: 2rem; max-width: 400px;">
             <div style="flex: 1;">
                 <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Score (%)</label>
-                <input type="number" class="input w-full" bind:value={round.checklist.quizfreely.score} onchange={saveState} placeholder="e.g. 87" />
+                <Input type="number" style="width: 100%;" bind:value={round.checklist.quizfreely.score} onchange={saveState} placeholder="e.g. 87" />
             </div>
             <div style="flex: 1;">
                 <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Questions</label>
-                <input type="text" class="input w-full" bind:value={round.checklist.quizfreely.questions} onchange={saveState} placeholder="e.g. 45/50" />
+                <Input type="text" style="width: 100%;" bind:value={round.checklist.quizfreely.questions} onchange={saveState} placeholder="e.g. 45/50" />
             </div>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Quizfreely Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Quizfreely Complete</Button>
 
     {:else if activeStage === 'reading'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">4. Reading</h2>
@@ -145,10 +150,10 @@
         
         <div style="margin-bottom: 2rem; max-width: 200px;">
             <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Comprehension Score (%)</label>
-            <input type="number" class="input w-full" bind:value={round.checklist.reading.score} onchange={saveState} placeholder="e.g. 90" />
+            <Input type="number" style="width: 100%;" bind:value={round.checklist.reading.score} onchange={saveState} placeholder="e.g. 90" />
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Reading Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Reading Complete</Button>
 
     {:else if activeStage === 'listening'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">5. Listening</h2>
@@ -165,10 +170,10 @@
         
         <div style="margin-bottom: 2rem; max-width: 200px;">
             <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Listening Score (%)</label>
-            <input type="number" class="input w-full" bind:value={round.checklist.listening.score} onchange={saveState} placeholder="e.g. 85" />
+            <Input type="number" style="width: 100%;" bind:value={round.checklist.listening.score} onchange={saveState} placeholder="e.g. 85" />
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Listening Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Listening Complete</Button>
 
     {:else if activeStage === 'writing'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">6. Writing</h2>
@@ -194,24 +199,24 @@
                 </div>
             </div>
             
-            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-md);">
+            <div style="background: var(--bg-2); padding: 1.5rem; border-radius: var(--radius-md);">
                 <h3 style="margin-top: 0; margin-bottom: 1rem;">Optional Self-Score (/10)</h3>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Grammar</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.writing.scores.grammar} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.writing.scores.grammar} onchange={saveState} />
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Vocabulary</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.writing.scores.vocab} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.writing.scores.vocab} onchange={saveState} />
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Clarity</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.writing.scores.clarity} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.writing.scores.clarity} onchange={saveState} />
                 </div>
             </div>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Writing Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Writing Complete</Button>
 
     {:else if activeStage === 'speaking'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">7. Speaking</h2>
@@ -236,28 +241,28 @@
                 </div>
             </div>
             
-            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-md);">
+            <div style="background: var(--bg-2); padding: 1.5rem; border-radius: var(--radius-md);">
                 <h3 style="margin-top: 0; margin-bottom: 1rem;">Optional Self-Score (/10)</h3>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Grammar</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.speaking.scores.grammar} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.speaking.scores.grammar} onchange={saveState} />
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Vocabulary</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.speaking.scores.vocab} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.speaking.scores.vocab} onchange={saveState} />
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Fluency</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.speaking.scores.fluency} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.speaking.scores.fluency} onchange={saveState} />
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Pronunciation</label>
-                    <input type="number" max="10" class="input w-full" bind:value={round.checklist.speaking.scores.pronunc} onchange={saveState} />
+                    <Input type="number" max="10" style="width: 100%;" bind:value={round.checklist.speaking.scores.pronunc} onchange={saveState} />
                 </div>
             </div>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Speaking Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Speaking Complete</Button>
 
     {:else if activeStage === 'massiveExercises'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">8. Massive Exercises</h2>
@@ -275,52 +280,52 @@
                 <label class="flex center compact-gap checkbox-label"><input type="checkbox" bind:checked={round.checklist.massiveExercises.tasks.cat8} onchange={saveState} /> Mixed Challenge (30-50q)</label>
             </div>
             
-            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-md);">
+            <div style="background: var(--bg-2); padding: 1.5rem; border-radius: var(--radius-md);">
                 <h3 style="margin-top: 0; margin-bottom: 1rem;">Summary</h3>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Total exercises</label>
-                    <input type="number" class="input w-full" bind:value={round.checklist.massiveExercises.scoreInfo.total} onchange={saveState} />
+                    <Input type="number" style="width: 100%;" bind:value={round.checklist.massiveExercises.scoreInfo.total} onchange={saveState} />
                 </div>
                 <div class="flex gap-4" style="margin-bottom: 1rem; gap: 1rem;">
                     <div style="flex: 1;">
                         <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: #03DAC6;">Correct</label>
-                        <input type="number" class="input w-full" bind:value={round.checklist.massiveExercises.scoreInfo.correct} onchange={saveState} />
+                        <Input type="number" style="width: 100%;" bind:value={round.checklist.massiveExercises.scoreInfo.correct} onchange={saveState} />
                     </div>
                     <div style="flex: 1;">
                         <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: #FF6B6B;">Wrong</label>
-                        <input type="number" class="input w-full" bind:value={round.checklist.massiveExercises.scoreInfo.wrong} onchange={saveState} />
+                        <Input type="number" style="width: 100%;" bind:value={round.checklist.massiveExercises.scoreInfo.wrong} onchange={saveState} />
                     </div>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Score (%)</label>
-                    <input type="number" class="input w-full" bind:value={round.checklist.massiveExercises.scoreInfo.percent} onchange={saveState} />
+                    <Input type="number" style="width: 100%;" bind:value={round.checklist.massiveExercises.scoreInfo.percent} onchange={saveState} />
                 </div>
             </div>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Massive Exercises Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Massive Exercises Complete</Button>
 
     {:else if activeStage === 'errorReview'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">9. Error Review</h2>
         <p class="fg1" style="margin-bottom: 2rem;">Turn mistakes into learning. Create and review your Error Log.</p>
         
         <div class="grid" style="grid-template-columns: 1fr 2fr; gap: 2rem; margin-bottom: 2rem;">
-            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-md); height: fit-content;">
+            <div style="background: var(--bg-2); padding: 1.5rem; border-radius: var(--radius-md); height: fit-content;">
                 <h3 style="margin-top: 0; margin-bottom: 1rem;">Log New Error</h3>
                 <form onsubmit={addError}>
                     <div style="margin-bottom: 1rem;">
                         <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: #FF6B6B;">Wrong Sentence</label>
-                        <input name="wrong" required type="text" class="input w-full" placeholder="e.g. He go to school yesterday." />
+                        <Input name="wrong" required type="text" style="width: 100%;" placeholder="e.g. He go to school yesterday." />
                     </div>
                     <div style="margin-bottom: 1rem;">
                         <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: #03DAC6;">Correct Sentence</label>
-                        <input name="correct" required type="text" class="input w-full" placeholder="e.g. He went to school yesterday." />
+                        <Input name="correct" required type="text" style="width: 100%;" placeholder="e.g. He went to school yesterday." />
                     </div>
                     <div style="margin-bottom: 1.5rem;">
                         <label class="fg1" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block;">Why?</label>
-                        <input name="why" type="text" class="input w-full" placeholder="e.g. Past Simple uses 'went'" />
+                        <Input name="why" type="text" style="width: 100%;" placeholder="e.g. Past Simple uses 'went'" />
                     </div>
-                    <button type="submit" class="button alt w-full" style="justify-content: center;">+ Add to Error Log</button>
+                    <Button variant="secondary" type="submit" style="width: 100%; justify-content: center;">+ Add to Error Log</Button>
                 </form>
             </div>
             
@@ -349,7 +354,7 @@
             </div>
         </div>
         
-        <button class="button main" onclick={markComplete}>Mark Error Review Complete</button>
+        <Button variant="primary" onclick={markComplete}>Mark Error Review Complete</Button>
 
     {:else if activeStage === 'checkpoint'}
         <h2 style="margin-top: 0; font-size: 2rem;" class="text-gradient">10. Checkpoint</h2>
@@ -361,31 +366,31 @@
                 
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 1 - Grammar (10q)</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.grammar} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.grammar} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 2 - Vocabulary (10q)</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.vocab} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.vocab} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 3 - Reading</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.reading} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.reading} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 4 - Listening</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.listening} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.listening} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 5 - Writing</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.writing} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.writing} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 6 - Speaking</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.speaking} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.speaking} />
                 </div>
                 <div class="flex justify-between" style="margin-bottom: 1rem; align-items: center;">
                     <label class="fg1">Part 7 - Mixed Grammar</label>
-                    <input type="number" class="input" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.mixed} />
+                    <Input type="number" style="width: 80px;" bind:value={round.checklist.checkpoint.scores.mixed} />
                 </div>
             </div>
             
@@ -413,11 +418,11 @@
             </div>
         </div>
         
-        <button class="button main w-full" style="justify-content: center; height: 3.5rem; font-size: 1.1rem;" onclick={evalCheckpoint}>
+        <Button variant="primary" style="width: 100%; justify-content: center; height: 3.5rem; font-size: 1.1rem;" onclick={evalCheckpoint}>
             Evaluate Checkpoint & Finish Round
-        </button>
+        </Button>
     {/if}
-</div>
+</Card>
 
 <style>
     .checkbox-label {

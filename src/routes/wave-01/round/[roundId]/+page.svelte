@@ -4,6 +4,7 @@
     import { trackerState, CHECKLIST_STEPS } from "$lib/trackerState.svelte.js";
     import CheckmarkIcon from "$lib/icons/Checkmark.svelte";
     import WorkspaceViews from "$lib/components/wave-01/WorkspaceViews.svelte";
+    import Card from "$lib/components/ui/Card.svelte";
 
     let roundId = $derived(page.params.roundId);
     let round = $derived(trackerState.rounds[roundId]);
@@ -54,25 +55,25 @@
         {#if activeWorkspace}
             <WorkspaceViews {round} activeStage={activeWorkspace} onClose={() => activeWorkspace = null} />
         {:else}
-            <div class="glass-panel" style="padding: 2.5rem; border-radius: var(--radius-xl); margin-bottom: 2rem;">
+            <Card style="padding: 2.5rem; margin-bottom: 2rem;">
                 <div class="flex justify-between" style="align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                     <h2 style="margin: 0;">Round Progress</h2>
                     {#if rProgress.status === 'COMPLETED'}
-                        <span style="background: rgba(3, 218, 198, 0.15); color: #03DAC6; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">COMPLETED</span>
+                        <span style="background: color-mix(in srgb, #03DAC6 15%, transparent); color: #03DAC6; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">COMPLETED</span>
                     {:else if rProgress.status === 'NEEDS REVIEW'}
-                        <span style="background: rgba(255, 107, 107, 0.15); color: #FF6B6B; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">NEEDS REVIEW</span>
+                        <span style="background: color-mix(in srgb, var(--ohno) 15%, transparent); color: var(--ohno); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">NEEDS REVIEW</span>
                     {:else if rProgress.status === 'READY FOR CHECKPOINT'}
-                        <span style="background: rgba(255, 193, 7, 0.15); color: #FFC107; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">READY FOR CHECKPOINT</span>
+                        <span style="background: color-mix(in srgb, #FFC107 15%, transparent); color: #FFC107; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">READY FOR CHECKPOINT</span>
                     {:else if rProgress.status === 'IN PROGRESS'}
-                        <span style="background: rgba(108, 99, 255, 0.15); color: var(--main); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">IN PROGRESS</span>
+                        <span style="background: color-mix(in srgb, var(--main) 15%, transparent); color: var(--main); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">IN PROGRESS</span>
                     {:else}
-                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--fg-1); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">NOT STARTED</span>
+                        <span style="background: var(--bg-2); color: var(--fg-1); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">NOT STARTED</span>
                     {/if}
                 </div>
                 
                 <p class="fg1" style="font-size: 0.95rem; margin-bottom: 1rem;">{rProgress.completed} / {rProgress.total} stages completed</p>
                 <div class="flex center" style="gap: 1rem; margin-bottom: 3rem;">
-                    <div style="flex-grow: 1; height: 16px; background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                    <div style="flex-grow: 1; height: 16px; background: var(--bg-2); border-radius: 8px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
                         <div style="height: 100%; width: {rProgress.percent}%; background: linear-gradient(90deg, var(--main), #03DAC6); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
                     </div>
                     <span style="font-weight: 700; font-size: 1.5rem; width: 60px; text-align: right;">{rProgress.percent}%</span>
@@ -82,16 +83,18 @@
                 
                 <div class="flex col" style="gap: 1.5rem; position: relative;">
                     <!-- Vertical connecting line -->
-                    <div style="position: absolute; top: 20px; bottom: 20px; left: 34px; width: 2px; background: rgba(255,255,255,0.1); z-index: 0;"></div>
+                    <div style="position: absolute; top: 20px; bottom: 20px; left: 34px; width: 2px; background: var(--bg-2); z-index: 0;"></div>
                     
                     {#each CHECKLIST_STEPS as step, i}
                         {@const isCompleted = round.checklist[step.id]?.completed}
-                        <button 
-                            class="glass-panel step-button" 
-                            style="position: relative; z-index: 1; display: flex; align-items: center; padding: 1.5rem; border-radius: var(--radius-md); background: {isCompleted ? 'rgba(3, 218, 198, 0.05)' : 'rgba(255,255,255,0.02)'}; border: 1px solid {isCompleted ? 'rgba(3, 218, 198, 0.3)' : 'rgba(255,255,255,0.05)'}; cursor: pointer; text-align: left; transition: all 0.2s;"
+                        <Card 
+                            interactive={true}
+                            class="step-card"
+                            style="position: relative; z-index: 1; display: flex; align-items: center; padding: 1.5rem; background: {isCompleted ? 'color-mix(in srgb, #03DAC6 5%, transparent)' : 'var(--bg-1)'}; border: 1px solid {isCompleted ? 'color-mix(in srgb, #03DAC6 30%, transparent)' : 'transparent'}; cursor: pointer; text-align: left; transition: all 0.2s;"
                             onclick={() => openWorkspace(step.id)}
+                            tag="button"
                         >
-                            <div class="flex center" style="justify-content: center; min-width: 36px; height: 36px; border-radius: 50%; margin-right: 1.5rem; background: {isCompleted ? '#03DAC6' : 'rgba(0,0,0,0.8)'}; border: 2px solid {isCompleted ? '#03DAC6' : 'rgba(255,255,255,0.3)'}; transition: all 0.2s;">
+                            <div class="flex center" style="justify-content: center; min-width: 36px; height: 36px; border-radius: 50%; margin-right: 1.5rem; background: {isCompleted ? '#03DAC6' : 'var(--bg-2)'}; border: 2px solid {isCompleted ? '#03DAC6' : 'var(--bg-3)'}; transition: all 0.2s;">
                                 {#if isCompleted}
                                     <CheckmarkIcon style="color: #000; width: 18px; height: 18px;" />
                                 {:else}
@@ -103,26 +106,25 @@
                                     <span style="font-size: 1.25rem; font-weight: {isCompleted ? '600' : '500'}; color: {isCompleted ? '#03DAC6' : 'var(--fg-0)'}; transition: all 0.2s;">{step.label}</span>
                                     
                                     {#if step.id === 'checkpoint' && round.checklist.checkpoint.completed}
-                                        <span style="font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px;">Score: {round.checklist.checkpoint.overall}%</span>
+                                        <span style="font-size: 0.85rem; background: var(--bg-2); padding: 4px 8px; border-radius: 6px;">Score: {round.checklist.checkpoint.overall}%</span>
                                     {/if}
                                 </div>
                                 <span style="display: block; font-size: 0.95rem; color: var(--fg-1);">{step.desc}</span>
                             </div>
-                        </button>
+                        </Card>
                     {/each}
                 </div>
-            </div>
+            </Card>
         {/if}
     {/if}
 </div>
 
 <style>
-    .step-button:hover {
-        background: rgba(255,255,255,0.08) !important;
+    :global(.step-card:hover) {
         transform: translateX(5px);
-        border-color: rgba(255,255,255,0.2) !important;
+        border-color: color-mix(in srgb, var(--fg-0) 10%, transparent) !important;
     }
-    .step-button:active {
+    :global(.step-card:active) {
         transform: translateX(2px);
     }
 </style>
