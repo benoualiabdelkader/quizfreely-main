@@ -159,6 +159,9 @@ declare const db: Dexie & {
     matchActivities: EntityTable<MatchActivity, "id">;
     images: EntityTable<Image, "key">;
     recentActivity: EntityTable<RecentActivity, "id">;
+    waveTenses: EntityTable<any, "id">;
+    waveRounds: EntityTable<any, "id">;
+    syncQueue: EntityTable<any, "id">;
 };
 export type { Studyset, Term, TermAtp, PracticeTest, PracticeTestQuestion, MCQData, TFQData, FRQData, Question, MCQ, TFQ, FRQ, TermProgress, ReviewEvent, ReviewEventStats, MatchActivity, PracticeTestQuestionType, ReviewActivityType, RecentActivity };
 export { db };

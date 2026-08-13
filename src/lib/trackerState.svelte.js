@@ -1,3 +1,5 @@
+import { db } from "$lib/idb-api-layer/db.js";
+
 export const DEFAULT_TENSES = [
     { id: 'past-simple', name: 'Past Simple', description: 'Completed actions in past' },
     { id: 'past-continuous', name: 'Past Continuous', description: 'Ongoing actions in the past' },
@@ -26,36 +28,84 @@ export function createTrackerState() {
     let roundsData = $state({});
     let loaded = $state(false);
 
-    function init() {
+    async function init() {
         if (loaded) return;
-        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-            const storedTenses = localStorage.getItem('wave01_tenses_v2');
-            const storedRounds = localStorage.getItem('wave01_rounds_v2');
-            
-            if (storedTenses) {
-                try { tensesData = JSON.parse(storedTenses); } catch (e) {}
-            } else {
-                const initialTenses = {};
-                DEFAULT_TENSES.forEach(t => {
-                    initialTenses[t.id] = { ...t, roundIds: [] };
-                });
-                tensesData = initialTenses;
+        
+        if (typeof window === 'undefined') {
+            loaded = true;
+            return;
+        }
+
+        try {
+            const dbTenses = await db.waveTenses.toArray();
+            const dbRounds = await db.waveRounds.toArray();
+
+            // Migration from localStorage
+            if (dbTenses.length === 0 && dbRounds.length === 0) {
+                const storedTenses = localStorage.getItem('wave01_tenses_v2');
+                const storedRounds = localStorage.getItem('wave01_rounds_v2');
+                
+                if (storedTenses || storedRounds) {
+                    if (storedTenses) {
+                        const parsed = JSON.parse(storedTenses);
+                        for (const tense of Object.values(parsed)) {
+                            await db.waveTenses.put(tense);
+                        }
+                    }
+                    if (storedRounds) {
+                        const parsed = JSON.parse(storedRounds);
+                        for (const round of Object.values(parsed)) {
+                            await db.waveRounds.put(round);
+                        }
+                    }
+                    localStorage.removeItem('wave01_tenses_v2');
+                    localStorage.removeItem('wave01_rounds_v2');
+                } else {
+                    // Initialize empty defaults
+                    const initialTenses = {};
+                    for (const t of DEFAULT_TENSES) {
+                        const tense = { ...t, roundIds: [] };
+                        await db.waveTenses.put(tense);
+                    }
+                }
             }
 
-            if (storedRounds) {
-                try { roundsData = JSON.parse(storedRounds); } catch (e) {}
-            }
+            // Load into state
+            const finalTenses = await db.waveTenses.toArray();
+            const finalRounds = await db.waveRounds.toArray();
+            
+            const tState = {};
+            for (const t of finalTenses) tState[t.id] = t;
+            tensesData = tState;
+
+            const rState = {};
+            for (const r of finalRounds) rState[r.id] = r;
+            roundsData = rState;
+
+        } catch (error) {
+            console.error("Failed to initialize tracker IDB:", error);
         }
+
         loaded = true;
     }
 
+    // Keep save() synchronous-looking for the UI bindings, but run async ops inside
     function save() {
-        if (!loaded || typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-        localStorage.setItem('wave01_tenses_v2', JSON.stringify(tensesData));
-        localStorage.setItem('wave01_rounds_v2', JSON.stringify(roundsData));
+        if (!loaded || typeof window === 'undefined') return;
+        
+        // This is a generic save for when bindings trigger save()
+        // It's better to use updateRoundState for precise updates, 
+        // but we keep this for backwards compatibility with the existing UI bindings.
+        // We will just iterate and save everything, though in a real app you'd proxy individual saves.
+        for (const t of Object.values(tensesData)) {
+            db.waveTenses.put($state.snapshot(t));
+        }
+        for (const r of Object.values(roundsData)) {
+            db.waveRounds.put($state.snapshot(r));
+        }
     }
 
-    function createRound(tenseId, name, description, vocabularyInfo) {
+    async function createRound(tenseId, name, description, vocabularyInfo) {
         const roundId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
         
         const checklist = {
@@ -67,11 +117,11 @@ export function createTrackerState() {
             writing: { completed: false, scores: { grammar: '', vocab: '', clarity: '' }, tasks: { level1: false, level2: false, level3: false, checkGrammar: false, checkVerb: false, checkOrder: false, checkVocab: false, checkSpell: false, checkPunct: false } },
             speaking: { completed: false, scores: { grammar: '', vocab: '', fluency: '', pronunc: '' }, tasks: { level1: false, level2: false, level3: false, level4: false, checkGrammar: false, checkVocab: false, checkRead: false, checkListen: false } },
             massiveExercises: { completed: false, scoreInfo: { total: '', correct: '', wrong: '', percent: '' }, tasks: { cat1: false, cat2: false, cat3: false, cat4: false, cat5: false, cat6: false, cat7: false, cat8: false } },
-            errorReview: { completed: false, errors: [] }, // { id, wrong, correct, why, status: { reviewed, understood, practiced, fixed } }
+            errorReview: { completed: false, errors: [] },
             checkpoint: { completed: false, passed: false, scores: { grammar: '', vocab: '', reading: '', listening: '', writing: '', speaking: '', mixed: '' }, overall: '' }
         };
 
-        roundsData[roundId] = {
+        const newRound = {
             id: roundId,
             tenseId,
             name,
@@ -81,18 +131,41 @@ export function createTrackerState() {
             createdAt: Date.now()
         };
 
+        // Update state
+        roundsData[roundId] = newRound;
+
         if (!tensesData[tenseId]) {
             tensesData[tenseId] = { id: tenseId, name: tenseId, description: '', roundIds: [] };
         }
         tensesData[tenseId].roundIds.push(roundId);
-        save();
+
+        // Save to IndexedDB
+        await db.waveRounds.put($state.snapshot(newRound));
+        await db.waveTenses.put($state.snapshot(tensesData[tenseId]));
+        
+        // Push to Sync Queue
+        await db.syncQueue.add({
+            timestamp: Date.now(),
+            action: 'CREATE_ROUND',
+            payload: { roundId, tenseId }
+        });
+
         return roundId;
     }
 
-    function updateRoundState(roundId, mutateFn) {
+    async function updateRoundState(roundId, mutateFn) {
         if (roundsData[roundId]) {
             mutateFn(roundsData[roundId]);
-            save();
+            const snapshot = $state.snapshot(roundsData[roundId]);
+            
+            await db.waveRounds.put(snapshot);
+            
+            // Push to Sync Queue
+            await db.syncQueue.add({
+                timestamp: Date.now(),
+                action: 'UPDATE_ROUND',
+                payload: { roundId }
+            });
         }
     }
     

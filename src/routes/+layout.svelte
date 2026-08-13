@@ -13,6 +13,7 @@ import { page } from '$app/state';
 import { getCancelBeforeNavigate } from "$lib/cancel-before-navigate.js";
 import { env } from "$env/dynamic/public";
 import { onMount } from "svelte";
+import OfflineBanner from "$lib/components/OfflineBanner.svelte";
 let { children, data } = $props();
 
 NProgress.configure({
@@ -95,4 +96,4 @@ onMount(() => {
     {/if}
 </div>
 {/key}
-
+<OfflineBanner />

@@ -398,4 +398,9 @@ db.version(20).stores({
 db.version(21).stores({
     recentActivity: "++id, studysetId, timestamp"
 });
+db.version(22).stores({
+    waveTenses: "id",
+    waveRounds: "id, tenseId",
+    syncQueue: "++id, timestamp"
+});
 export { db };
